@@ -74,6 +74,8 @@ public final class BrotherQLConnection {
 
     /**
      * Construct a connection assuming the given Printer Device.
+     * 
+     * @param device the backend device to use
      */
     public BrotherQLConnection(BrotherQLDevice device) {
         this.device = device;

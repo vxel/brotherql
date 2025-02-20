@@ -49,6 +49,7 @@ public interface BrotherQLDevice {
      * @param timeout timeout (in milliseconds) that this function should wait before giving up due to no 
      *                response being received. For an unlimited timeout, use value 0.
      * @param data the data to send to the printer.
+     * @throws BrotherQLException if the data could not be sent
      */
     void write(byte[] data, long timeout) throws BrotherQLException;
 

@@ -11,7 +11,7 @@
 
     <name>brotherql</name>
     <description>Java library for printing labels using the raster language protocol on Brother QL printers</description>
-    <url>https://github.com/vxel/briotherql</url>
+    <url>https://github.com/vxel/brotherql</url>
 
     <licenses>
         <license>
@@ -55,6 +55,24 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+            
+            <plugin>
+
+
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <!-- For Java 11 Modules, specify a module name. Do not create module-info.java until
+                                 usb4java dependency specify a module name. -->
+                            <Automatic-Module-Name>org.delaunois.brotherql</Automatic-Module-Name>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+            
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
