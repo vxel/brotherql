@@ -34,6 +34,16 @@ Options supported (see BrotherQLJob javadoc for more details):
 - **brightness**: Brightness factor applied before dithering. Higher means brighter.
 - **rotate**: rotate the image (clock-wise) by this angle in degrees. Accepted angles are multiple of 90 degrees (90, 180, 270).
 
+## Maven dependency
+
+```
+<dependency>
+    <groupId>org.delaunois</groupId>
+    <artifactId>brotherql</artifactId>
+    <version>v1.0.0</version>
+</dependency>
+```
+
 ## Code example
 
 Here is a quick example of how to print a label using the library:
