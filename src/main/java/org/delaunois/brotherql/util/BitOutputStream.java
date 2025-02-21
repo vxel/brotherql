@@ -43,7 +43,11 @@ public final class BitOutputStream {
     private int numBitsInCurrentByte;
 
 
-    // Creates a bit output stream based on the given byte output stream.
+    /**
+     * Creates a bit output stream based on the given byte output stream.
+     *
+     * @param out thr output stream
+     */
     public BitOutputStream(OutputStream out) {
         if (out == null)
             throw new NullPointerException("Argument is null");
@@ -53,7 +57,14 @@ public final class BitOutputStream {
     }
 
 
-    // Writes a bit to the stream. The specified bit must be 0 or 1.
+    /**
+     * Writes a bit to the stream. The specified bit must be 0 or 1.
+     *
+     * @param b the bit
+     * @throws IOException if an I/O error occurs. In particular,
+     *                     an {@code IOException} may be thrown if the
+     *                     output stream has been closed.
+     */
     public void write(int b) throws IOException {
         if (!(b == 0 || b == 1))
             throw new IllegalArgumentException("Argument must be 0 or 1");
@@ -65,9 +76,13 @@ public final class BitOutputStream {
         }
     }
 
-
-    // Closes this stream and the underlying OutputStream. If called when this bit stream is not at a byte boundary,
-    // then the minimum number of "0" bits (between 0 and 7 of them) are written as padding to reach the next byte boundary.
+    /**
+     * Closes this stream and the underlying OutputStream. If called when this bit stream is not at a byte boundary,
+     * then the minimum number of "0" bits (between 0 and 7 of them) are written as padding to reach the next
+     * byte boundary.
+     *
+     * @throws IOException if an I/O error occurs.
+     */
     public void close() throws IOException {
         while (numBitsInCurrentByte != 0)
             write(0);

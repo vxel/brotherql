@@ -9,14 +9,24 @@ package org.delaunois.brotherql.util;
 import java.nio.ByteBuffer;
 
 /**
- * Internal utility to convert byte array to hex String 
+ * Internal utility to convert byte array to hex String
  *
  * @author Cedric de Launois
  */
 public class Hex {
-    
+
     private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 
+    private Hex() {
+        // Prevent instanciation
+    }
+
+    /**
+     * Converts the given buffer content to a displayable hex String.
+     *
+     * @param buffer the buffer
+     * @return the string
+     */
     public static String toString(ByteBuffer buffer) {
         byte[] status = new byte[buffer.limit()];
         buffer.get(status);
@@ -24,11 +34,17 @@ public class Hex {
         return String.valueOf(toChar(status));
     }
 
+    /**
+     * Converts the given byte array to a displayable hex String.
+     *
+     * @param bytes the byte array
+     * @return the string
+     */
     public static String toString(byte[] bytes) {
         return String.valueOf(toChar(bytes));
     }
-    
-    public static char[] toChar(byte[] bytes) {
+
+    private static char[] toChar(byte[] bytes) {
         char[] hexChars = new char[bytes.length * 2];
         for (int i = 0; i < bytes.length; i++) {
             int v = bytes[i] & 0xFF;
@@ -37,5 +53,5 @@ public class Hex {
         }
         return hexChars;
     }
-    
+
 }

@@ -15,14 +15,31 @@ import org.delaunois.brotherql.util.Rx;
  */
 public class BrotherQLException extends Exception {
 
-    public BrotherQLException(String s) {
-        super(s);
+    /**
+     * Construct the exception with the given error message.
+     *
+     * @param message the error message
+     */
+    public BrotherQLException(String message) {
+        super(message);
     }
 
-    public BrotherQLException(String s, int libusberror) {
-        super(s + Rx.msg("error.libusb") + libusberror);
+    /**
+     * Construct the exception with the given error message and given libusb error id.
+     *
+     * @param message     the error message
+     * @param libusberror the libusb error id
+     */
+    public BrotherQLException(String message, int libusberror) {
+        super(message + Rx.msg("error.libusb") + libusberror);
     }
-    
+
+    /**
+     * Construct the exception with the given error message and given cause.
+     *
+     * @param message the error message
+     * @param cause   the exception cause
+     */
     public BrotherQLException(String message, Throwable cause) {
         super(message, cause);
     }

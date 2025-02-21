@@ -13,37 +13,56 @@ import java.util.Objects;
 
 /**
  * Hold and parse a Brother QL status
- * 
+ *
  * @author Cedric de Launois
  */
 public class BrotherQLStatus {
-    
-    private static final byte[] UNAVAILABLE = new byte[] { 
-            0, 0, 0, 0, 0, 0, 0, 0, 
-            0, 0, 0, BrotherQLMediaType.UNKNOWN.code, 0, 0, 0, 0, 
+
+    private static final byte[] UNAVAILABLE = new byte[]{
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, BrotherQLMediaType.UNKNOWN.code, 0, 0, 0, 0,
             0, 0, BrotherQLStatusType.PRINTER_UNAVAILABLE.code, BrotherQLPhaseType.UNKNOWN.code, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0
     };
-    
-    private static final byte[] NOT_CONNECTED = new byte[] { 
-            0, 0, 0, 0, 0, 0, 0, 0, 
-            0, 0, 0, BrotherQLMediaType.UNKNOWN.code, 0, 0, 0, 0, 
+
+    private static final byte[] NOT_CONNECTED = new byte[]{
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, BrotherQLMediaType.UNKNOWN.code, 0, 0, 0, 0,
             0, 0, BrotherQLStatusType.PRINTER_NOT_CONNECTED.code, BrotherQLPhaseType.UNKNOWN.code, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0
     };
 
     private byte[] status;
 
+    /**
+     * The printer id.
+     */
     @Getter
     private BrotherQLPrinterId printerId;
 
+    /**
+     * A user-friendly exception message (if any).
+     */
     @Getter
     private String exceptionMessage;
 
+    /**
+     * Construct a status with the given status bytes and the given printer id.
+     *
+     * @param status    the status
+     * @param printerId the printer id
+     */
     public BrotherQLStatus(byte[] status, BrotherQLPrinterId printerId) {
         this(status, printerId, null);
     }
-    
+
+    /**
+     * Construct a status with the given status bytes, the given printer id and the given message.
+     *
+     * @param status           the status
+     * @param printerId        the printer id
+     * @param exceptionMessage the exception message
+     */
     public BrotherQLStatus(byte[] status, BrotherQLPrinterId printerId, String exceptionMessage) {
         this.exceptionMessage = exceptionMessage;
         this.printerId = Objects.requireNonNullElse(printerId, BrotherQLPrinterId.UNKNOWN);
@@ -59,12 +78,18 @@ public class BrotherQLStatus {
         }
     }
 
+    /**
+     * Get the set of error types.
+     * 
+     * @return the error set
+     */
     public EnumSet<BrotherQLErrorType> getErrors() {
         return BrotherQLErrorType.getStatusFlags(status[8], status[9]);
     }
 
     /**
-     * Get media width, in mm
+     * Get media width, in mm.
+     *
      * @return the width
      */
     public int getMediaWidth() {
@@ -72,7 +97,8 @@ public class BrotherQLStatus {
     }
 
     /**
-     * Get media type
+     * Get media type.
+     *
      * @return the type
      */
     public BrotherQLMediaType getMediaType() {
@@ -81,14 +107,16 @@ public class BrotherQLStatus {
 
     /**
      * Get media length, in mm. 0 for continuous tape.
+     *
      * @return the width
      */
     public int getMediaLength() {
         return status[17];
     }
-    
+
     /**
-     * Get status type
+     * Get status type.
+     *
      * @return the type
      */
     public BrotherQLStatusType getStatusType() {
@@ -96,7 +124,8 @@ public class BrotherQLStatus {
     }
 
     /**
-     * Get phase type
+     * Get phase type.
+     *
      * @return the type
      */
     public BrotherQLPhaseType getPhaseType() {
@@ -119,13 +148,13 @@ public class BrotherQLStatus {
 
         return str.toString();
     }
-    
+
     private String getDimension() {
         int length = getMediaLength();
         int width = getMediaWidth();
-        
+
         if (length == 0) {
-            return width + "mm";    
+            return width + "mm";
         } else {
             return width + "mm x " + length + "mm";
         }

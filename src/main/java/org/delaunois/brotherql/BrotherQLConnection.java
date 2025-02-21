@@ -74,7 +74,7 @@ public final class BrotherQLConnection {
 
     /**
      * Construct a connection assuming the given Printer Device.
-     * 
+     *
      * @param device the backend device to use
      */
     public BrotherQLConnection(BrotherQLDevice device) {
@@ -95,7 +95,7 @@ public final class BrotherQLConnection {
 
     /**
      * Reset the printer state.
-     * 
+     *
      * @throws BrotherQLException if the reset instruction could not be sent
      */
     public void reset() throws BrotherQLException {
@@ -185,7 +185,7 @@ public final class BrotherQLConnection {
                 || device.isClosed()) {
             throw new BrotherQLException(Rx.msg("error.incompletejob"));
         }
-        
+
         BrotherQLStatus status = requestDeviceStatus();
         if (status.getStatusType() != BrotherQLStatusType.READY) {
             throw new BrotherQLException(Rx.msg("error.notready"));
@@ -197,7 +197,7 @@ public final class BrotherQLConnection {
         sendControlCode(images, job, media);
 
         for (int i = 0; i < images.size(); i++) {
-            
+
             sendPrintData(images.get(i), media);
 
             boolean last = i == images.size() - 1;
@@ -232,20 +232,20 @@ public final class BrotherQLConnection {
      * Convert the job images to monochrome according to the batch options
      * (dithering, brightness, threshold, rotation...).
      * This method can be used to preview the labels.
-     * 
+     *
      * @param job the job
      * @return the rastered images
      */
     public static List<BufferedImage> raster(BrotherQLJob job) {
         List<BufferedImage> images = job.getImages();
         List<BufferedImage> convertedImages = new ArrayList<>();
-        
+
         for (BufferedImage image : images) {
             BufferedImage converted = image;
             if (job.getRotate() != 0) {
                 converted = Converter.rotate(image, job.getRotate());
-            } 
-            
+            }
+
             if (job.isDither()) {
                 converted = Converter.floydSteinbergDithering(converted, job.getBrightness());
             } else {
@@ -253,10 +253,10 @@ public final class BrotherQLConnection {
             }
             convertedImages.add(converted);
         }
-        
+
         return convertedImages;
     }
-    
+
     /**
      * Close the printer connection.
      * Should be closed before your application exits.
@@ -299,7 +299,7 @@ public final class BrotherQLConnection {
         if (bodyWidthPx != media.bodyWidthPx) {
             throw new BrotherQLException(String.format(Rx.msg("error.img.badwidth"), media.bodyWidthPx));
         }
-        
+
         BrotherQLPrinterId printerId = device.getPrinterId();
         if (BrotherQLMediaType.CONTINUOUS_LENGTH_TAPE.equals(media.mediaType)) {
             if (bodyLengthPx < printerId.clMinLengthPx) {
@@ -313,7 +313,7 @@ public final class BrotherQLConnection {
                 throw new BrotherQLException(String.format(Rx.msg("error.img.badheight"), media.bodyLengthPx));
             }
         }
-        
+
         for (BufferedImage image : images) {
             if (image.getHeight() != bodyLengthPx || image.getWidth() != bodyWidthPx) {
                 throw new BrotherQLException(String.format(Rx.msg("error.img.vary")));
@@ -415,7 +415,7 @@ public final class BrotherQLConnection {
             throw new BrotherQLException(Rx.msg("error.senderror"), e);
         }
     }
-    
+
     private void sleep(int millis) {
         if (millis <= 0) {
             return;

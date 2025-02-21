@@ -18,19 +18,60 @@ import java.util.EnumSet;
  */
 public enum BrotherQLErrorType {
 
-    NO_MEDIA_WHEN_PRINTING(1,0, Rx.msg("errortype.nomedia")),
+    /**
+     * No Media
+     */
+    NO_MEDIA_WHEN_PRINTING(1, 0, Rx.msg("errortype.nomedia")),
+
+    /**
+     * End of media
+     */
     END_OF_MEDIA(1, 1, Rx.msg("errortype.endofmedia")),
+
+    /**
+     * Tape cutter jam
+     */
     TAPE_CUTTER_JAM(1, 2, Rx.msg("errortype.tapecutterjam")),
+
+    /**
+     * Printer already in use
+     */
     UNIT_IN_USE(1, 4, Rx.msg("errortype.unitinuse")),
+
+    /**
+     * Fan doesn't work
+     */
     FAN_DOESNT_WORK(1, 7, Rx.msg("errortype.fan")),
-    TRANSMISSION_ERROR(2,2, Rx.msg("errortype.transmission")),
+
+    /**
+     * I/O error
+     */
+    TRANSMISSION_ERROR(2, 2, Rx.msg("errortype.transmission")),
+
+    /**
+     * Cover is opened
+     */
     COVER_OPENED(2, 4, Rx.msg("errortype.cover")),
+
+    /**
+     * Feeding issue
+     */
     CANNOT_FEED(2, 6, Rx.msg("errortype.feed")),
+
+    /**
+     * Printer internal error
+     */
     SYSTEM_ERROR(2, 7, Rx.msg("errortype.system"));
 
+    /**
+     * A user-frienldy message associated to the error
+     */
     @Getter
     public final String message;
 
+    /**
+     * The raw error flags
+     */
     public final int flag;
 
     BrotherQLErrorType(int errorId, int id, String message) {

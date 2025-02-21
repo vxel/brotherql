@@ -57,6 +57,10 @@ public class Converter {
         return closest;
     }
 
+    private Converter() {
+        // Prevent instanciation
+    }
+
     /**
      * Compute the luminance of a given color.
      *

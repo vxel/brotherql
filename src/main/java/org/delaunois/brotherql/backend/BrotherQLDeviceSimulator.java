@@ -31,6 +31,12 @@ public class BrotherQLDeviceSimulator implements BrotherQLDevice {
     
     private BrotherQLPrinterId printerId;
 
+    /**
+     * Simulate a brother QL printer with the given id and given media.
+     * 
+     * @param printerId the printerId
+     * @param media the media
+     */
     public BrotherQLDeviceSimulator(BrotherQLPrinterId printerId, BrotherQLMedia media) {
         this.printerId = printerId;
         status[10] = (byte)media.labelWidthMm;
@@ -48,19 +54,39 @@ public class BrotherQLDeviceSimulator implements BrotherQLDevice {
         status[17] = (byte)media.labelLengthMm;
         status[11] = media.mediaType.code;
     }
-    
+
+    /**
+     * Set another status type for the simulated printer.
+     * 
+     * @param statusType the new status type
+     */
     public void setStatusType(BrotherQLStatusType statusType) {
         status[18] = statusType.code;
     }
-    
+
+    /**
+     * Set another phase type for the simulated printer.
+     * 
+     * @param phaseType the new status type
+     */
     public void setPhaseType(BrotherQLPhaseType phaseType) {
         status[19] = phaseType.code;
     }
 
+    /**
+     * Set the first error byte for the simulated printer.
+     * 
+     * @param error the error byte
+     */
     public void setErrorInfo1(byte error) {
         status[8] = error;
     }
 
+    /**
+     * Set the second error byte for the simulated printer.
+     * 
+     * @param error the error byte
+     */
     public void setErrorInfo2(byte error) {
         status[9] = error;
     }

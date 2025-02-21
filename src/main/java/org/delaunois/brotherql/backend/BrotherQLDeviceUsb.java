@@ -60,6 +60,9 @@ public class BrotherQLDeviceUsb implements BrotherQLDevice {
     private EndpointDescriptor epIn;
     private EndpointDescriptor epOut;
 
+    /**
+     * Construct the backend for USB Brother QL devices.
+     */
     public BrotherQLDeviceUsb() {
         handle = null;
         context = new Context();

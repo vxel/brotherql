@@ -11,13 +11,24 @@ import java.util.Map;
 
 /**
  * Brother QL printer phases
- * 
+ *
  * @author Cedric de Launois
  */
 public enum BrotherQLPhaseType {
-    
+
+    /**
+     * Waiting to receive phase.
+     */
     WAITING_TO_RECEIVE((byte) 0x00),
+
+    /**
+     * Printing phase.
+     */
     PHASE_PRINTING((byte) 0x01),
+
+    /**
+     * Unknown phase.
+     */
     UNKNOWN((byte) 0xFF);
 
     private static final Map<Byte, BrotherQLPhaseType> CODE_MAP = new HashMap<>();
@@ -28,14 +39,23 @@ public enum BrotherQLPhaseType {
         }
     }
 
+    /**
+     * The raw code of the phase.
+     */
     public final byte code;
 
     BrotherQLPhaseType(byte code) {
         this.code = code;
     }
 
+    /**
+     * Identify the phase based on the given code.
+     *
+     * @param code the code
+     * @return the phase
+     */
     public static BrotherQLPhaseType fromCode(byte code) {
         return CODE_MAP.get(code);
     }
-    
+
 }

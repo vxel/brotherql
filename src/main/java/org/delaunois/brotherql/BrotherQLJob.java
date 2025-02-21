@@ -25,6 +25,12 @@ import java.util.List;
 public class BrotherQLJob {
 
     /**
+     * Construct a new print job.
+     */
+    public BrotherQLJob() {
+    }
+
+    /**
      * Whether autocut is enabled or not.
      */
     private boolean autocut = true;
@@ -40,7 +46,7 @@ public class BrotherQLJob {
     private List<BufferedImage> images = new ArrayList<>();
 
     /**
-     *  The feed amount in dots.
+     * The feed amount in dots.
      */
     private int feedAmount;
 
@@ -53,7 +59,7 @@ public class BrotherQLJob {
      * The threshold value (between 0 and 1) to discriminate between black and white pixels, based on pixel luminance.
      * Lower threshold means less printed dots, i.e. a brighter image.
      * Meaningless if dither is true.
-     * Pixels with luminance below this threshold will be printed. 
+     * Pixels with luminance below this threshold will be printed.
      * Default is 0.35 to compensate printed dots that "bleed" on the adjacent ones.
      */
     private float threshold = 0.35f;
@@ -66,8 +72,8 @@ public class BrotherQLJob {
 
     /**
      * Brightness factor applied before dithering. Higher means brighter.
-     * Default is 1.8, i.e. the dithered image is made nearly 2x brighter than the original. 
-     * This improves the rendering of dithered images on Brother label printers because 
+     * Default is 1.8, i.e. the dithered image is made nearly 2x brighter than the original.
+     * This improves the rendering of dithered images on Brother label printers because
      * printed dots tend to "bleed" on the adjacent ones, making the image darker.
      * This does not affect images that are already pure black and white since black (0.0) remains black
      * and white (1.0) remains white.
@@ -80,5 +86,5 @@ public class BrotherQLJob {
      * Default is 0.
      */
     private int rotate = 0;
-    
+
 }
