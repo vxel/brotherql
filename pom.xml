@@ -4,15 +4,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.delaunois</groupId>
-    <artifactId>brotherql</artifactId>
-    <version>1.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
-
     <name>brotherql</name>
     <description>Java library for printing labels using the raster language protocol on Brother QL printers</description>
     <url>https://github.com/vxel/brotherql</url>
 
+    <groupId>org.delaunois</groupId>
+    <artifactId>brotherql</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
     <licenses>
         <license>
             <name>MIT License</name>
@@ -31,13 +30,20 @@
     <scm>
         <connection>scm:git:git://github.com/vxel/brotherql.git</connection>
         <developerConnection>scm:git:ssh://github.com:vxel/brotherql.git</developerConnection>
-        <url>https://github.com/vxel/brotherql/tree/master</url>
+        <url>https://github.com/vxel/brotherql</url>
     </scm>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+    
     <build>
         <plugins>
             <plugin>
@@ -57,8 +63,6 @@
             </plugin>
             
             <plugin>
-
-
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.4.2</version>
@@ -74,9 +78,23 @@
             </plugin>
             
             <plugin>
+                <!-- Recommended way to deploy to OSSRH -->
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.7.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central</publishingServerId>
+                    <autoPublish>false</autoPublish>
+                    <deploymentName>${project.artifactId}:${project.version}</deploymentName>
+                    <waitUntil>validated</waitUntil>
+                </configuration>
+            </plugin>
+
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
-                <version>3.2.1</version>
+                <version>3.3.1</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
@@ -90,7 +108,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.2.0</version>
+                <version>3.10.1</version>
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>
@@ -114,6 +132,17 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>3.1.1</version>
+                <configuration>
+                    <arguments>-ntp</arguments>
+                    <scmCommentPrefix/>
+                    <tagNameFormat>v@{project.version}</tagNameFormat>
+                </configuration>
             </plugin>
             
         </plugins>
