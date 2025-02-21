@@ -17,7 +17,7 @@ jobs:
     - name: Set up Maven Central Repository
       uses: actions/setup-java@v4
       with:
-        java-version: '11'
+        java-version: '17'
         distribution: 'temurin'
         server-id: central
         server-username: MAVEN_USERNAME
@@ -27,8 +27,8 @@ jobs:
     - name: Set version
       run: mvn versions:set -DnewVersion=${{ github.event.release.tag_name }}
     - name: Publish package
-      run: mvn -P release --batch-mode deploy -DskipTests
+      run: mvn --batch-mode deploy -DskipTests
       env:
         MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
         MAVEN_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-        MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PRIVATE_KEY }}
+        MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
