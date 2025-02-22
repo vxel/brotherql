@@ -8,7 +8,7 @@ package org.delaunois.brotherql.backend;
 
 import lombok.Getter;
 import org.delaunois.brotherql.BrotherQLException;
-import org.delaunois.brotherql.BrotherQLPrinterId;
+import org.delaunois.brotherql.BrotherQLModel;
 import org.delaunois.brotherql.util.Hex;
 import org.delaunois.brotherql.util.Rx;
 import org.usb4java.BufferUtils;
@@ -27,9 +27,12 @@ import org.usb4java.LibUsbException;
 import java.io.IOException;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Predicate;
 
 import static org.usb4java.LibUsb.ENDPOINT_DIR_MASK;
@@ -44,7 +47,7 @@ import static org.usb4java.LibUsb.ENDPOINT_OUT;
 public class BrotherQLDeviceUsb implements BrotherQLDevice {
 
     private static final Logger LOGGER = System.getLogger(BrotherQLDeviceUsb.class.getName());
-    
+
     /**
      * The vendor ID of the Brother QL Printer.
      */
@@ -52,8 +55,9 @@ public class BrotherQLDeviceUsb implements BrotherQLDevice {
     private static final int STATUS_SIZE = 32;
 
     @Getter
-    private BrotherQLPrinterId printerId;
+    private BrotherQLModel model;
 
+    private final URI uri;
     private Context context;
     private DeviceHandle handle;
     private DeviceDescriptor deviceDescriptor;
@@ -61,46 +65,49 @@ public class BrotherQLDeviceUsb implements BrotherQLDevice {
     private EndpointDescriptor epOut;
 
     /**
-     * Construct the backend for USB Brother QL devices.
+     * Construct a backend for the first USB Brother printer found.
      */
     public BrotherQLDeviceUsb() {
-        handle = null;
-        context = new Context();
+        this(null);
+    }
+
+    /**
+     * Construct the backend for the USB Brother printer identified by the given URI.
+     *
+     * @param uri the URI identifier for the USB printer : a string like usb://Brother/QL-700?serial=XXX
+     */
+    public BrotherQLDeviceUsb(URI uri) {
+        this.uri = uri;
+        this.handle = null;
+        this.context = new Context();
+
         int result = LibUsb.init(context);
         if (result != LibUsb.SUCCESS)
             throw new LibUsbException(Rx.msg("libusb.initerror"), result);
         LibUsb.setOption(context, LibUsb.OPTION_LOG_LEVEL, LibUsb.LOG_LEVEL_INFO);
+
+        if (!"usb".equals(uri.getScheme())) {
+            throw new IllegalArgumentException("Only usb supported");
+        }
+
+        if (!"Brother".equals(uri.getHost())) {
+            throw new IllegalArgumentException("Only Brother printers supported");
+        }
     }
-    
+
     @Override
     public void open() throws BrotherQLException {
         if (handle != null) {
             throw new IllegalStateException(Rx.msg("libusb.alreadyopened"));
         }
 
-        // Find a supported Brother device
-        Device device = findDevice();
+        // Find the requested Brother device
+        Device device = findDevice(uri);
         if (device == null) {
             throw new BrotherQLException(Rx.msg("libusb.nodevicelist"));
         }
 
-        // Open a connection to the device
-        handle = new DeviceHandle();
-        int result = LibUsb.open(device, handle);
-        switch (result) {
-            case LibUsb.SUCCESS:
-                break;
-            case LibUsb.ERROR_NO_MEM:
-                throw new BrotherQLException(Rx.msg("libusb.nomem"));
-            case LibUsb.ERROR_ACCESS:
-                throw new BrotherQLException(Rx.msg("libusb.noaccess"));
-            case LibUsb.ERROR_NO_DEVICE:
-                throw new BrotherQLException(Rx.msg("libusb.nodevice"));
-            default:
-                throw new BrotherQLException(Rx.msg("libusb.unknown"), result);
-        }
-
-        result = LibUsb.setAutoDetachKernelDriver(handle, true);
+        int result = LibUsb.setAutoDetachKernelDriver(handle, true);
         if (result != LibUsb.SUCCESS) {
             LOGGER.log(Level.WARNING, "setAutoDetachKernelDriver failed: " + result);
         }
@@ -147,22 +154,19 @@ public class BrotherQLDeviceUsb implements BrotherQLDevice {
         }
     }
 
-    @Override
-    public boolean isClosed() {
-        return handle == null;
-    }
-    
     /**
-     * Find a Brother USB device that we know, based on BrotherQLPrinterId enum.
-     * 
-     * @return the device, if found, null otherwise
+     * List the detected Brother USB devices.
+     *
+     * @return the string identifier of the detected printers
      * @throws BrotherQLException if a libusb error occurred while getting the device list
      */
-    private Device findDevice() throws BrotherQLException {
-        // Read the USB device list
+    public static List<String> listDevices() throws BrotherQLException {
+        LibUsb.init(null);
+        List<String> devices = new ArrayList<>();
         DeviceList list = new DeviceList();
-        int result = LibUsb.getDeviceList(context, list);
+        int result = LibUsb.getDeviceList(null, list);
         if (result < 0) {
+            LibUsb.exit(null);
             throw new BrotherQLException(Rx.msg("libusb.nodevicelist"), result);
         }
 
@@ -174,13 +178,100 @@ public class BrotherQLDeviceUsb implements BrotherQLDevice {
                 if (result != LibUsb.SUCCESS) {
                     throw new BrotherQLException(Rx.msg("libusb.devicereadfailure"), result);
                 }
-                BrotherQLPrinterId pId = BrotherQLPrinterId.fromCode(descriptor.idProduct());
-                if (descriptor.idVendor() == BROTHER_VENDOR_ID
-                        && pId != null) {
+
+                BrotherQLModel pId = BrotherQLModel.fromCode(descriptor.idProduct());
+                if (descriptor.idVendor() == BROTHER_VENDOR_ID && pId != null) {
+                    DeviceHandle deviceHandle = openDevice(device);
+                    String deviceSerial = LibUsb.getStringDescriptor(deviceHandle, descriptor.iSerialNumber());
+                    String uri = String.format("usb://Brother/%s?serial=%s", pId, deviceSerial);
+                    devices.add(uri);
+                    LibUsb.close(deviceHandle);
+                }
+            }
+        } finally {
+            // Ensure the allocated device list is freed
+            LibUsb.freeDeviceList(list, true);
+            LibUsb.exit(null);
+        }
+
+        // Device not found
+        return devices;
+    }
+
+    @Override
+    public boolean isClosed() {
+        return handle == null;
+    }
+
+    private BrotherQLModel getModelFromUri(URI uri) {
+        if (uri == null || uri.getPath() == null || !uri.getPath().startsWith("/")) {
+            return null;
+        }
+
+        String path = uri.getPath().substring(1);
+        for (BrotherQLModel m : BrotherQLModel.values()) {
+            if (path.equals(m.name)) {
+                return m;
+            }
+        }
+        return null;
+    }
+
+    private String getSerialFromUri(URI uri) {
+        if (uri == null || uri.getQuery() == null) {
+            return null;
+        }
+
+        String[] queryParts = uri.getQuery().split("=");
+        if (queryParts.length < 2 || !queryParts[0].equals("serial")) {
+            return null;
+        }
+        return queryParts[1];
+    }
+
+    /**
+     * Find a Brother USB device that we know, based on BrotherQLModel enum.
+     *
+     * @return the device, if found, null otherwise
+     * @throws BrotherQLException if a libusb error occurred while getting the device list
+     */
+    private Device findDevice(URI uri) throws BrotherQLException {
+        // Read the USB device list
+        DeviceList list = new DeviceList();
+        int result = LibUsb.getDeviceList(context, list);
+        if (result < 0) {
+            throw new BrotherQLException(Rx.msg("libusb.nodevicelist"), result);
+        }
+
+        BrotherQLModel model = getModelFromUri(uri);
+        String serial = getSerialFromUri(uri);
+
+        try {
+            // Iterate over all devices and scan for the right one
+            for (Device device : list) {
+                DeviceDescriptor descriptor = new DeviceDescriptor();
+                result = LibUsb.getDeviceDescriptor(device, descriptor);
+                if (result != LibUsb.SUCCESS) {
+                    throw new BrotherQLException(Rx.msg("libusb.devicereadfailure"), result);
+                }
+
+                BrotherQLModel pId = BrotherQLModel.fromCode(descriptor.idProduct());
+                if (descriptor.idVendor() == BROTHER_VENDOR_ID && pId != null && (model == null || pId == model)) {
                     // A known Brother device was found !
-                    this.deviceDescriptor = descriptor;
-                    this.printerId = pId;
-                    return device;
+                    DeviceHandle deviceHandle = openDevice(device);
+                    String deviceSerial = LibUsb.getStringDescriptor(deviceHandle, descriptor.iSerialNumber());
+                    if (serial == null || serial.equals(deviceSerial)) {
+                        this.handle = deviceHandle;
+                        this.deviceDescriptor = descriptor;
+                        this.model = pId;
+                        LOGGER.log(Level.DEBUG, "Found printer {0}", this.model);
+                        return device;
+                    } else {
+                        // Wrong device, continue
+                        LOGGER.log(Level.DEBUG, "Brother printer {0} s/n {1} not matching requested URI {2}",
+                                pId, deviceSerial, uri);
+                        LibUsb.close(deviceHandle);
+                    }
                 }
             }
         } finally {
@@ -191,7 +282,26 @@ public class BrotherQLDeviceUsb implements BrotherQLDevice {
         // Device not found
         return null;
     }
-    
+
+    private static DeviceHandle openDevice(Device device) throws BrotherQLException {
+        // Open a connection to the device
+        DeviceHandle deviceHandle = new DeviceHandle();
+        int result = LibUsb.open(device, deviceHandle);
+        switch (result) {
+            case LibUsb.SUCCESS:
+                break;
+            case LibUsb.ERROR_NO_MEM:
+                throw new BrotherQLException(Rx.msg("libusb.nomem"));
+            case LibUsb.ERROR_ACCESS:
+                throw new BrotherQLException(Rx.msg("libusb.noaccess"));
+            case LibUsb.ERROR_NO_DEVICE:
+                throw new BrotherQLException(Rx.msg("libusb.nodevice"));
+            default:
+                throw new BrotherQLException(Rx.msg("libusb.unknown"), result);
+        }
+        return deviceHandle;
+    }
+
     /**
      * Find the interface that matches the given predicate.
      *
@@ -240,7 +350,7 @@ public class BrotherQLDeviceUsb implements BrotherQLDevice {
     @Override
     public void write(byte[] data, long timeout) throws BrotherQLException {
         LOGGER.log(Level.DEBUG, "Tx: " + Hex.toString(data));
-        
+
         ByteBuffer buffer = BufferUtils.allocateByteBuffer(data.length);
         buffer.put(data);
         try {
@@ -287,7 +397,7 @@ public class BrotherQLDeviceUsb implements BrotherQLDevice {
         if (result != LibUsb.SUCCESS) {
             LOGGER.log(Level.WARNING, Rx.msg("error.readerror") + result);
         }
-        
+
         int read = transferred.get();
         if (read > 0 && LOGGER.isLoggable(Level.DEBUG)) {
             LOGGER.log(Level.DEBUG, "Rx: " + Hex.toString(buffer));
@@ -304,5 +414,5 @@ public class BrotherQLDeviceUsb implements BrotherQLDevice {
         LibUsb.exit(context);
         context = new Context();
     }
-    
+
 }

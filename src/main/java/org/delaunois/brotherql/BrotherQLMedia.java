@@ -272,13 +272,13 @@ public enum BrotherQLMedia {
      * @return the media
      */
     public static BrotherQLMedia identify(BrotherQLStatus status) {
-        BrotherQLPrinterId printerId = status.getPrinterId();
+        BrotherQLModel model = status.getModel();
         BrotherQLMediaType mediaType = status.getMediaType();
         int labelWidthMm = status.getMediaWidth();
         int labelLengthMm = status.getMediaLength();
 
         int rgtSizeByte = 90;
-        if (BrotherQLPrinterId.QL_1050.equals(printerId) || BrotherQLPrinterId.QL_1060N.equals(printerId)) {
+        if (BrotherQLModel.QL_1050.equals(model) || BrotherQLModel.QL_1060N.equals(model)) {
             rgtSizeByte = 162;
         }
 

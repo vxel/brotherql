@@ -2,7 +2,7 @@ package org.delaunois.brotherql.backend;
 
 import org.delaunois.brotherql.BrotherQLMedia;
 import org.delaunois.brotherql.BrotherQLPhaseType;
-import org.delaunois.brotherql.BrotherQLPrinterId;
+import org.delaunois.brotherql.BrotherQLModel;
 import org.delaunois.brotherql.BrotherQLStatusType;
 import org.delaunois.brotherql.util.Hex;
 import org.usb4java.BufferUtils;
@@ -29,16 +29,16 @@ public class BrotherQLDeviceSimulator implements BrotherQLDevice {
             0, 0, 0, 0, 0, 0, 0, 0
     };
     
-    private BrotherQLPrinterId printerId;
+    private BrotherQLModel model;
 
     /**
      * Simulate a brother QL printer with the given id and given media.
      * 
-     * @param printerId the printerId
+     * @param model the printer model
      * @param media the media
      */
-    public BrotherQLDeviceSimulator(BrotherQLPrinterId printerId, BrotherQLMedia media) {
-        this.printerId = printerId;
+    public BrotherQLDeviceSimulator(BrotherQLModel model, BrotherQLMedia media) {
+        this.model = model;
         status[10] = (byte)media.labelWidthMm;
         status[17] = (byte)media.labelLengthMm;
         status[11] = media.mediaType.code;
@@ -91,12 +91,16 @@ public class BrotherQLDeviceSimulator implements BrotherQLDevice {
         status[9] = error;
     }
 
+    private boolean open = false;
+    
     @Override
-    public void open() {}
+    public void open() {
+        open = true;
+    }
 
     @Override
-    public BrotherQLPrinterId getPrinterId() {
-        return printerId;
+    public BrotherQLModel getModel() {
+        return model;
     }
 
     @Override
@@ -115,10 +119,12 @@ public class BrotherQLDeviceSimulator implements BrotherQLDevice {
 
     @Override
     public boolean isClosed() {
-        return false;
+        return !open;
     }
 
     @Override
-    public void close() {}
+    public void close() {
+        open = false;
+    }
     
 }

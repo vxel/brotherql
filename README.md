@@ -58,9 +58,9 @@ Here is a quick example of how to print a label using the library:
             .setDelay(1000)
             .setImages(List.of(image));
     
-    // Print the job
+    // Print the job, using the first detected USB Brother printer
     BrotherQLConnection connection = new BrotherQLConnection();
-    try {
+    try (connection) {
         // Open the connection with the printer
         connection.open();
         
@@ -80,12 +80,17 @@ Here is a quick example of how to print a label using the library:
         
     } catch (BrotherQLException e) {
         // Error while printing, See e.getMessage()
-        
-    } finally {
-        connection.close();
+        ...        
     }
 ```
-             
+        
+The list of available USB printers can be obtained through a call to `BrotherQLConnection.listDevices()`,
+that will return a list of printer identifier like `usb://Brother/QL-700?serial=XXXX`, where `QL-700` is the name
+of a model (see `BrotherQLModel` enum class), and `?serial=XXXX` is optional and can be used to define the serial number
+of the printer to use.
+The identifier is to be used as parameter of the `BrotherQLConnection` constructor.
+
+
 ## Linux UDEV Configuration
 
 Please note that the package need Read/Write access to the USB printer device.

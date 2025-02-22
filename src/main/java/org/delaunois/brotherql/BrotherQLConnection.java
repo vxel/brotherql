@@ -14,9 +14,11 @@ import org.delaunois.brotherql.util.Rx;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +29,7 @@ import java.util.function.BiFunction;
  *
  * @author Cedric de Launois
  */
-public final class BrotherQLConnection {
+public final class BrotherQLConnection implements Closeable {
 
     private static final Logger LOGGER = System.getLogger(BrotherQLConnection.class.getName());
 
@@ -66,19 +68,47 @@ public final class BrotherQLConnection {
     private BrotherQLDevice device;
 
     /**
-     * Construct a connection assuming a USB Printer Device.
+     * Construct a connection to the first USB Brother Printer found.
      */
     public BrotherQLConnection() {
         this.device = new BrotherQLDeviceUsb();
     }
 
     /**
-     * Construct a connection assuming the given Printer Device.
+     * Construct a connection to the device identified by the given printer identifier.
+     * The identifier is a string like "usb://Brother/QL-700?serial=XXX"
+     * See {@link #listDevices()} to get the identifiers of connected printers.
+     *
+     * @param address the device address
+     */
+    public BrotherQLConnection(String address) {
+        URI uri = URI.create(address);
+        if ("usb".equals(uri.getScheme())) {
+            this.device = new BrotherQLDeviceUsb(uri);
+        } else {
+            throw new UnsupportedOperationException("Scheme " + uri.getScheme() + " not supported");
+        }
+    }
+
+    /**
+     * Construct a connection using the given Printer Device.
      *
      * @param device the backend device to use
      */
     public BrotherQLConnection(BrotherQLDevice device) {
         this.device = device;
+    }
+
+    /**
+     * Get the list of connected Brother printers.
+     * Only USB devices can be discovered.
+     * 
+     * @return the list of printer identifiers, e.g. "usb://Brother/QL-700?serial=XXX"
+     * @throws BrotherQLException if an error occurred while getting the device list
+     */
+    public static List<String> listDevices() throws BrotherQLException {
+        // Only USB devices can be discovered
+        return BrotherQLDeviceUsb.listDevices();
     }
 
     /**
@@ -104,13 +134,13 @@ public final class BrotherQLConnection {
     }
 
     /**
-     * Get the printer identification.
+     * Get the printer model.
      * The device must be opened first.
      *
-     * @return the printer id or null if no Brother printer were detected
+     * @return the printer model or null if no Brother printer were detected
      */
-    public BrotherQLPrinterId getPrinterId() {
-        return device.getPrinterId();
+    public BrotherQLModel getModel() {
+        return device.getModel();
     }
 
     /**
@@ -123,7 +153,7 @@ public final class BrotherQLConnection {
      */
     public BrotherQLStatus requestDeviceStatus() throws BrotherQLException {
         if (device.isClosed()) {
-            return new BrotherQLStatus(null, device.getPrinterId(), Rx.msg("error.notopened"));
+            return new BrotherQLStatus(null, device.getModel(), Rx.msg("error.notopened"));
         }
 
         device.write(CMD_STATUS_REQUEST, TIMEOUT);
@@ -138,7 +168,7 @@ public final class BrotherQLConnection {
      */
     public BrotherQLStatus readDeviceStatus() {
         if (device.isClosed()) {
-            return new BrotherQLStatus(null, device.getPrinterId(), Rx.msg("error.notopened"));
+            return new BrotherQLStatus(null, device.getModel(), Rx.msg("error.notopened"));
         }
 
         BrotherQLStatus brotherQLStatus;
@@ -150,7 +180,7 @@ public final class BrotherQLConnection {
         } else {
             byte[] status = new byte[STATUS_SIZE];
             response.get(status);
-            brotherQLStatus = new BrotherQLStatus(status, device.getPrinterId());
+            brotherQLStatus = new BrotherQLStatus(status, device.getModel());
         }
 
         LOGGER.log(Level.DEBUG, "Status is " + brotherQLStatus);
@@ -300,13 +330,13 @@ public final class BrotherQLConnection {
             throw new BrotherQLException(String.format(Rx.msg("error.img.badwidth"), media.bodyWidthPx));
         }
 
-        BrotherQLPrinterId printerId = device.getPrinterId();
+        BrotherQLModel model = device.getModel();
         if (BrotherQLMediaType.CONTINUOUS_LENGTH_TAPE.equals(media.mediaType)) {
-            if (bodyLengthPx < printerId.clMinLengthPx) {
-                throw new BrotherQLException(String.format(Rx.msg("error.img.minheight"), printerId.clMinLengthPx));
+            if (bodyLengthPx < model.clMinLengthPx) {
+                throw new BrotherQLException(String.format(Rx.msg("error.img.minheight"), model.clMinLengthPx));
             }
-            if (bodyLengthPx > printerId.clMaxLengthPx) {
-                throw new BrotherQLException(String.format(Rx.msg("error.img.maxheight"), printerId.clMaxLengthPx));
+            if (bodyLengthPx > model.clMaxLengthPx) {
+                throw new BrotherQLException(String.format(Rx.msg("error.img.maxheight"), model.clMaxLengthPx));
             }
         } else {
             if (bodyLengthPx != media.bodyLengthPx) {
@@ -326,7 +356,7 @@ public final class BrotherQLConnection {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
             // Switch to raster if multiple modes exist
-            if (!device.getPrinterId().rasterOnly) {
+            if (!device.getModel().rasterOnly) {
                 bos.write(CMD_SWITCH_TO_RASTER);
             }
 
@@ -372,7 +402,7 @@ public final class BrotherQLConnection {
     }
 
     private int getFeedAmount(BrotherQLJob job, BrotherQLMedia media) {
-        if (device.getPrinterId().allowsFeedMargin) {
+        if (device.getModel().allowsFeedMargin) {
             return job.getFeedAmount() & 0xFFFF;
         } else if (media.mediaType.equals(BrotherQLMediaType.DIE_CUT_LABEL)) {
             return 0;

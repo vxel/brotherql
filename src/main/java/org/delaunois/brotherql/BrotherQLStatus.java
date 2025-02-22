@@ -35,10 +35,10 @@ public class BrotherQLStatus {
     private byte[] status;
 
     /**
-     * The printer id.
+     * The printer model.
      */
     @Getter
-    private BrotherQLPrinterId printerId;
+    private BrotherQLModel model;
 
     /**
      * A user-friendly exception message (if any).
@@ -47,27 +47,27 @@ public class BrotherQLStatus {
     private String exceptionMessage;
 
     /**
-     * Construct a status with the given status bytes and the given printer id.
+     * Construct a status with the given status bytes and the given printer model.
      *
-     * @param status    the status
-     * @param printerId the printer id
+     * @param status the status
+     * @param model  the printer model
      */
-    public BrotherQLStatus(byte[] status, BrotherQLPrinterId printerId) {
-        this(status, printerId, null);
+    public BrotherQLStatus(byte[] status, BrotherQLModel model) {
+        this(status, model, null);
     }
 
     /**
-     * Construct a status with the given status bytes, the given printer id and the given message.
+     * Construct a status with the given status bytes, the given printer model and the given message.
      *
      * @param status           the status
-     * @param printerId        the printer id
+     * @param model            the printer model
      * @param exceptionMessage the exception message
      */
-    public BrotherQLStatus(byte[] status, BrotherQLPrinterId printerId, String exceptionMessage) {
+    public BrotherQLStatus(byte[] status, BrotherQLModel model, String exceptionMessage) {
         this.exceptionMessage = exceptionMessage;
-        this.printerId = Objects.requireNonNullElse(printerId, BrotherQLPrinterId.UNKNOWN);
+        this.model = Objects.requireNonNullElse(model, BrotherQLModel.UNKNOWN);
 
-        if (status == null && BrotherQLPrinterId.UNKNOWN.equals(this.printerId)) {
+        if (status == null && BrotherQLModel.UNKNOWN.equals(this.model)) {
             this.status = NOT_CONNECTED;
         } else if (status == null) {
             this.status = UNAVAILABLE;
@@ -80,7 +80,7 @@ public class BrotherQLStatus {
 
     /**
      * Get the set of error types.
-     * 
+     *
      * @return the error set
      */
     public EnumSet<BrotherQLErrorType> getErrors() {

@@ -7,12 +7,12 @@
 package org.delaunois.brotherql.backend;
 
 import org.delaunois.brotherql.BrotherQLException;
-import org.delaunois.brotherql.BrotherQLPrinterId;
+import org.delaunois.brotherql.BrotherQLModel;
 
 import java.nio.ByteBuffer;
 
 /**
- * Backend interface for Brother QL printer communications. 
+ * Backend interface for Brother QL printer communications.
  *
  * @author Cedric de Launois
  */
@@ -27,17 +27,17 @@ public interface BrotherQLDevice {
     void open() throws BrotherQLException;
 
     /**
-     * Get the printer identification.
+     * Get the printer model.
      * The device must be opened first.
      *
-     * @return the printer id or null if no Brother printer were detected
+     * @return the printer model or null if no Brother printer were detected
      */
-    BrotherQLPrinterId getPrinterId();
+    BrotherQLModel getModel();
 
     /**
      * Read a printer status.
      *
-     * @param timeout timeout (in milliseconds) that this function should wait before giving up due to no response 
+     * @param timeout timeout (in milliseconds) that this function should wait before giving up due to no response
      *                being received. For an unlimited timeout, use value 0.
      * @return the read data or null if did not receive a valid status within timeout
      */
@@ -46,16 +46,16 @@ public interface BrotherQLDevice {
     /**
      * Writes some data to the printer.
      *
-     * @param timeout timeout (in milliseconds) that this function should wait before giving up due to no 
+     * @param timeout timeout (in milliseconds) that this function should wait before giving up due to no
      *                response being received. For an unlimited timeout, use value 0.
-     * @param data the data to send to the printer.
+     * @param data    the data to send to the printer.
      * @throws BrotherQLException if the data could not be sent
      */
     void write(byte[] data, long timeout) throws BrotherQLException;
 
     /**
      * Get whether the printer connection is closed or not.
-     * 
+     *
      * @return true if the printer connection is closed, false if it is open.
      */
     boolean isClosed();

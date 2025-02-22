@@ -1,4 +1,7 @@
-package org.delaunois.brotherql;
+package org.delaunois.brotherql.example;
+
+import org.delaunois.brotherql.BrotherQLConnection;
+import org.delaunois.brotherql.BrotherQLJob;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;

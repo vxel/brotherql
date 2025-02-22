@@ -1,5 +1,12 @@
-package org.delaunois.brotherql;
+package org.delaunois.brotherql.example;
 
+import org.delaunois.brotherql.BrotherQLConnection;
+import org.delaunois.brotherql.BrotherQLException;
+import org.delaunois.brotherql.BrotherQLJob;
+import org.delaunois.brotherql.BrotherQLMedia;
+import org.delaunois.brotherql.BrotherQLModel;
+import org.delaunois.brotherql.BrotherQLStatus;
+import org.delaunois.brotherql.BrotherQLStatusType;
 import org.delaunois.brotherql.backend.BrotherQLDeviceSimulator;
 
 import javax.imageio.ImageIO;
@@ -18,7 +25,7 @@ public class PrintExample {
     
     private static final System.Logger LOGGER = System.getLogger(PrintExample.class.getName());
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, BrotherQLException {
         // Create or load an image
         InputStream is = PrintExample.class.getResourceAsStream("/david.png");
         if (is == null) {
@@ -35,17 +42,23 @@ public class PrintExample {
                 .setDelay(3000)
                 .setImages(List.of(img));
         
-        // Print the job
+        // List available printers
+        List<String> devices = BrotherQLConnection.listDevices();
+        LOGGER.log(Level.INFO, devices);
+        
+        // Simulate a job print
         BrotherQLConnection connection = new BrotherQLConnection(new BrotherQLDeviceSimulator(
-                BrotherQLPrinterId.QL_700_P,
+                BrotherQLModel.QL_700_P,
                 BrotherQLMedia.CT_62_720
         ));
         
-        LOGGER.log(Level.INFO, "Printer: " + connection.getPrinterId().toString());
+        // Or actually print it ! with BrotherQLConnection connection = new BrotherQLConnection(devices.get(0));
 
-        try {
+        try (connection) {
             // Open the connection with the printer
             connection.open();
+
+            LOGGER.log(Level.INFO, "Printer: " + connection.getModel().toString());
             
             // Check the printer state (optional)
             BrotherQLStatus status = connection.requestDeviceStatus();
@@ -54,7 +67,7 @@ public class PrintExample {
                 LOGGER.log(Level.INFO, "Printer is not ready : {0}", status);
                 return;
             }
-                
+
             // Note : this checks the printer state before printing
             connection.sendJob(job, (pageNumber, s) -> {
                 LOGGER.log(Level.INFO, "Label {0} succesfully printed ! Status is {1}", pageNumber, s);
@@ -62,16 +75,14 @@ public class PrintExample {
                 // Return true to continue with next page, false otherwise
                 return true;
             });
-            
+
             status = connection.requestDeviceStatus();
             LOGGER.log(Level.INFO, "Printer status is {0}", status);
-            
+
         } catch (BrotherQLException e) {
             // Error while printing, See e.getMessage()
             LOGGER.log(Level.WARNING, e.getMessage());
-            
-        } finally {
-            connection.close();
+
         }
     }
     
