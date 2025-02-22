@@ -36,11 +36,13 @@ Options supported (see BrotherQLJob javadoc for more details):
 
 ## Maven dependency
 
+The package is available from [Maven Central](https://central.sonatype.com) and
+can be used with the following dependency :
 ```
 <dependency>
     <groupId>org.delaunois</groupId>
     <artifactId>brotherql</artifactId>
-    <version>v1.0.0</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 
