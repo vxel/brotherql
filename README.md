@@ -42,7 +42,7 @@ can be used with the following dependency :
 <dependency>
     <groupId>org.delaunois</groupId>
     <artifactId>brotherql</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.1</version>
 </dependency>
 ```
 
