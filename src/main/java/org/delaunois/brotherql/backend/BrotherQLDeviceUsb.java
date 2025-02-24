@@ -86,12 +86,14 @@ public class BrotherQLDeviceUsb implements BrotherQLDevice {
             throw new LibUsbException(Rx.msg("libusb.initerror"), result);
         LibUsb.setOption(context, LibUsb.OPTION_LOG_LEVEL, LibUsb.LOG_LEVEL_INFO);
 
-        if (!"usb".equals(uri.getScheme())) {
-            throw new IllegalArgumentException("Only usb supported");
-        }
-
-        if (!"Brother".equals(uri.getHost())) {
-            throw new IllegalArgumentException("Only Brother printers supported");
+        if (uri != null) {
+            if (!"usb".equals(uri.getScheme())) {
+                throw new IllegalArgumentException("Only usb supported");
+            }
+    
+            if (!"Brother".equals(uri.getHost())) {
+                throw new IllegalArgumentException("Only Brother printers supported");
+            }
         }
     }
 
