@@ -102,7 +102,7 @@ public final class BrotherQLConnection implements Closeable {
     /**
      * Get the list of connected Brother printers.
      * Only USB devices can be discovered.
-     * 
+     *
      * @return the list of printer identifiers, e.g. "usb://Brother/QL-700?serial=XXX"
      * @throws BrotherQLException if an error occurred while getting the device list
      */
@@ -201,7 +201,18 @@ public final class BrotherQLConnection implements Closeable {
      * Send the given Job for printing.
      *
      * @param job            the job to print.
-     * @param statusListener a lambda called after each print. The lambda receives as argument the page
+     * @throws BrotherQLException if the job is missing information, or if the printer is not ready,
+     *                            or if another print error occurred
+     */
+    public void sendJob(BrotherQLJob job) throws BrotherQLException {
+        sendJob(job, null);
+    }
+
+    /**
+     * Send the given Job for printing.
+     *
+     * @param job            the job to print.
+     * @param statusListener a lambda called after each print (or null). The lambda receives as argument the page
      *                       number that was printed (starting at 0) and the current status,
      *                       and must return a boolean telling whether the print must continue or not.
      * @throws BrotherQLException if the job is missing information, or if the printer is not ready,

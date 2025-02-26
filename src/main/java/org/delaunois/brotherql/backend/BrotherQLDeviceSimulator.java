@@ -1,5 +1,6 @@
 package org.delaunois.brotherql.backend;
 
+import lombok.Getter;
 import org.delaunois.brotherql.BrotherQLMedia;
 import org.delaunois.brotherql.BrotherQLPhaseType;
 import org.delaunois.brotherql.BrotherQLModel;
@@ -30,6 +31,12 @@ public class BrotherQLDeviceSimulator implements BrotherQLDevice {
     };
     
     private BrotherQLModel model;
+
+    /**
+     * A formatted string showing the bytes received by the simulator
+     */
+    @Getter
+    private String tx = "";
 
     /**
      * Simulate a brother QL printer with the given id and given media.
@@ -115,6 +122,7 @@ public class BrotherQLDeviceSimulator implements BrotherQLDevice {
     @Override
     public void write(byte[] data, long timeout) {
         LOGGER.log(Level.INFO, "Tx: " + Hex.toString(data));
+        tx += Hex.toString(data) + "\n";
     }
 
     @Override
@@ -126,5 +134,11 @@ public class BrotherQLDeviceSimulator implements BrotherQLDevice {
     public void close() {
         open = false;
     }
-    
+
+    /**
+     * Clears the bytes received by the simulator.
+     */
+    public void clearTx() {
+        tx = "";
+    }
 }

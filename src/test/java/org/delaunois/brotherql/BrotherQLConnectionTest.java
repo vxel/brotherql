@@ -1,12 +1,19 @@
 package org.delaunois.brotherql;
 
 import org.delaunois.brotherql.backend.BrotherQLDeviceSimulator;
+import org.delaunois.brotherql.example.PrintExample;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
+import java.util.List;
+import java.util.Objects;
 
 import static org.junit.Assert.*;
 
@@ -19,7 +26,7 @@ public class BrotherQLConnectionTest {
     public void setUp() throws BrotherQLException {
         // Simulate a Brother QL-700 model with 62mm continuous labels
         BrotherQLModel simulatedModel = BrotherQLModel.QL_700_P;
-        BrotherQLMedia simulatedMedia = BrotherQLMedia.DC_62X100_720; // Die-cut label, 62x100mm
+        BrotherQLMedia simulatedMedia = BrotherQLMedia.CT_62_720; // Die-cut label, 62x100mm
 
         deviceSimulator = new BrotherQLDeviceSimulator(simulatedModel, simulatedMedia);
         connection = new BrotherQLConnection(deviceSimulator);
@@ -46,8 +53,8 @@ public class BrotherQLConnectionTest {
 
         // Verify specific parts of the status
         assertEquals(62, status.getMediaWidth()); // Label width
-        assertEquals(100, status.getMediaLength()); // Label length
-        assertEquals(BrotherQLMediaType.DIE_CUT_LABEL.code, status.getMediaType().code); // Media type
+        assertEquals(0, status.getMediaLength()); // Label length (0 = continuous)
+        assertEquals(BrotherQLMediaType.CONTINUOUS_LENGTH_TAPE.code, status.getMediaType().code); // Media type
     }
 
     @Test
@@ -83,11 +90,28 @@ public class BrotherQLConnectionTest {
         BrotherQLStatus parsedStatus = new BrotherQLStatus(status, deviceSimulator.getModel());
 
         assertEquals("Parsed media width should match", 62, parsedStatus.getMediaWidth());
-        assertEquals("Parsed media length should match", 100, parsedStatus.getMediaLength());
+        assertEquals("Parsed media length should match", 0, parsedStatus.getMediaLength());
         assertEquals("Parsed media type should match",
-                BrotherQLMediaType.DIE_CUT_LABEL, parsedStatus.getMediaType());
+                BrotherQLMediaType.CONTINUOUS_LENGTH_TAPE, parsedStatus.getMediaType());
         assertEquals("Parsed printer status type should be READY",
                 BrotherQLStatusType.READY, parsedStatus.getStatusType());
     }
+    
+    @Test
+    public void testSendJob() throws IOException, BrotherQLException {
+        InputStream is = PrintExample.class.getResourceAsStream("/david.png");
+        InputStream rasterIs = PrintExample.class.getResourceAsStream("/david-job.raster");
+        String raster = new String(Objects.requireNonNull(rasterIs).readAllBytes());
+        BufferedImage img = ImageIO.read(Objects.requireNonNull(is));
+        
+        BrotherQLJob job = new BrotherQLJob()
+                .setAutocut(true)
+                .setBrightness(1.0f)
+                .setImages(List.of(img));
+                        
+        connection.sendJob(job);
+
+        assertEquals(raster, deviceSimulator.getTx());
+    }    
     
 }
