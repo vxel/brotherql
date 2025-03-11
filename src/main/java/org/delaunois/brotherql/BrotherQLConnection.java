@@ -82,11 +82,16 @@ public final class BrotherQLConnection implements Closeable {
      * @param address the device address
      */
     public BrotherQLConnection(String address) {
-        URI uri = URI.create(address);
-        if ("usb".equals(uri.getScheme())) {
-            this.device = new BrotherQLDeviceUsb(uri);
+        if (address == null || address.isEmpty()) {
+            this.device = new BrotherQLDeviceUsb();
+            
         } else {
-            throw new UnsupportedOperationException("Scheme " + uri.getScheme() + " not supported");
+            URI uri = URI.create(address);
+            if ("usb".equals(uri.getScheme())) {
+                this.device = new BrotherQLDeviceUsb(uri);
+            } else {
+                throw new UnsupportedOperationException("Scheme " + uri.getScheme() + " not supported");
+            }
         }
     }
 
