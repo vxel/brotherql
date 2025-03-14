@@ -33,6 +33,7 @@ Options supported (see BrotherQLJob javadoc for more details):
   Meaningless if dither is true
 - **brightness**: Brightness factor applied before dithering. Higher means brighter.
 - **rotate**: rotate the image (clock-wise) by this angle in degrees. Accepted angles are multiple of 90 degrees (90, 180, 270).
+- **dpi600**: use 600 dpi height x 300 dpi wide resolution. Only available on some models. The image must be provided as 600x600 dpi. The width will be resized to 300dpi.
 
 ## Maven dependency
 
@@ -42,7 +43,7 @@ can be used with the following dependency :
 <dependency>
     <groupId>org.delaunois</groupId>
     <artifactId>brotherql</artifactId>
-    <version>1.1.1</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 
@@ -124,3 +125,5 @@ This package was made thanks to :
 - the [usb4java](http://usb4java.org/) library to access USB devices with Java
 - the [Brother QL printers documentation](https://download.brother.com/welcome/docp000678/cv_qlseries_eng_raster_600.pdf)
 - the [brother_ql](https://github.com/pklaus/brother_ql) package that implements the same protocol for the Python language
+               
+White dove test image is from Mali Maeder.

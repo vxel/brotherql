@@ -22,7 +22,8 @@ public interface BrotherQLDevice {
      * Search for a USB Brother printer and open a connection.
      *
      * @throws IllegalStateException if the printer is already opened
-     * @throws BrotherQLException    if the USB connection could not be established
+     * @throws BrotherQLException    if the USB connection could not be established (e.g. device not found,
+     *                               not connected, busy)
      */
     void open() throws BrotherQLException;
 

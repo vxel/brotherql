@@ -16,6 +16,7 @@ import java.util.List;
 
 /**
  * A job for a Brother QL printer.
+ * If multiple images are provided, options will apply to all.
  *
  * @author Cedric de Launois
  */
@@ -60,9 +61,9 @@ public class BrotherQLJob {
      * Lower threshold means less printed dots, i.e. a brighter image.
      * Meaningless if dither is true.
      * Pixels with luminance below this threshold will be printed.
-     * Default is 0.35 to compensate printed dots that "bleed" on the adjacent ones.
+     * Default is 0.5.
      */
-    private float threshold = 0.35f;
+    private float threshold = 0.5f;
 
     /**
      * Whether to apply dithering or not when converting images to monochrome B/W.
@@ -72,13 +73,12 @@ public class BrotherQLJob {
 
     /**
      * Brightness factor applied before dithering. Higher means brighter.
-     * Default is 1.8, i.e. the dithered image is made nearly 2x brighter than the original.
+     * Default is 1.0. For images, it is advised to set it higher, for example 1.8f, i.e. 
+     * the dithered image is made nearly 2x brighter than the original.
      * This improves the rendering of dithered images on Brother label printers because
      * printed dots tend to "bleed" on the adjacent ones, making the image darker.
-     * This does not affect images that are already pure black and white since black (0.0) remains black
-     * and white (1.0) remains white.
      */
-    private float brightness = 1.8f;
+    private float brightness = 1.0f;
 
     /**
      * Rotate the image (clock-wise) by this angle in degrees.
@@ -86,5 +86,13 @@ public class BrotherQLJob {
      * Default is 0.
      */
     private int rotate = 0;
+
+    /**
+     * Use 600 dpi height x 300 dpi wide resolution. Only available on some models.
+     * The image must be provided as 600x600 dpi. The width will be resized 
+     * to 300dpi.
+     * Default is false;
+     */
+    private boolean dpi600 = false;
 
 }

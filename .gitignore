@@ -1,4 +1,6 @@
 /*.png
+/*.iml
 /.idea
+/local
 /target
 /dependency-reduced-pom.xml

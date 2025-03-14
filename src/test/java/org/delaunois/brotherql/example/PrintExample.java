@@ -27,7 +27,7 @@ public class PrintExample {
 
     public static void main(String[] args) throws IOException, BrotherQLException {
         // Create or load an image
-        InputStream is = PrintExample.class.getResourceAsStream("/david.png");
+        InputStream is = PrintExample.class.getResourceAsStream("/white-dove-1392.png");
         if (is == null) {
             LOGGER.log(Level.INFO, "Resource not found");
             return;
@@ -38,7 +38,8 @@ public class PrintExample {
         BrotherQLJob job = new BrotherQLJob()
                 .setAutocut(false)
                 .setDither(true)
-                .setBrightness(1.8f)
+                .setBrightness(1.0f)
+                .setDpi600(true)
                 .setDelay(3000)
                 .setImages(List.of(img));
         
@@ -52,7 +53,7 @@ public class PrintExample {
                 BrotherQLMedia.CT_62_720
         ));
         
-        // Or actually print it ! with BrotherQLConnection connection = new BrotherQLConnection(devices.get(0));
+        // Or actually print it ! with : BrotherQLConnection connection = new BrotherQLConnection();
 
         try (connection) {
             // Open the connection with the printer

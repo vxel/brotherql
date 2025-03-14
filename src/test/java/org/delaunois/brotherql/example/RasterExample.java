@@ -28,7 +28,7 @@ public class RasterExample {
         // Use image dithering (Floyd-Steinberg)
         job = new BrotherQLJob()
                 .setDither(true)
-                .setBrightness(1.8f)
+                .setBrightness(1.0f)
                 .setImages(List.of(loadImage()));
         
         rastered = BrotherQLConnection.raster(job);
@@ -39,7 +39,7 @@ public class RasterExample {
         job = new BrotherQLJob()
                 .setDither(false)
                 .setRotate(-90)
-                .setThreshold(0.38f)
+                .setThreshold(0.7f)
                 .setImages(List.of(loadImage()));
         
         rastered = BrotherQLConnection.raster(job);
@@ -48,7 +48,7 @@ public class RasterExample {
     }
     
     private static BufferedImage loadImage() throws IOException {
-        InputStream is = RasterExample.class.getResourceAsStream("/david.png");
+        InputStream is = RasterExample.class.getResourceAsStream("/white-dove-696.png");
         if (is == null) {
             LOGGER.log(System.Logger.Level.INFO, "Resource not found");
             throw  new IOException("Resource not found");

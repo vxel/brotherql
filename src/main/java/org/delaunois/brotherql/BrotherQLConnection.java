@@ -48,15 +48,16 @@ public final class BrotherQLConnection implements Closeable {
     private static final byte[] CMD_RESET = new byte[350];
     private static final byte[] CMD_INITIALIZE = new byte[]{0x1B, 0x40};
     private static final byte[] CMD_STATUS_REQUEST = new byte[]{0x1B, 0x69, 0x53};
+    private static final byte[] CMD_SWITCH_TO_RASTER = new byte[]{0x1B, 0x69, 0x61, 0x01};
     private static final byte[] CMD_PRINT_INFORMATION = new byte[]{0x1B, 0x69, 0x7A};
     private static final byte[] CMD_SET_AUTOCUT_ON = new byte[]{0x1B, 0x69, 0x4D, 0x40};
     private static final byte[] CMD_SET_AUTOCUT_OFF = new byte[]{0x1B, 0x69, 0x4D, 0};
     private static final byte[] CMD_SET_CUT_PAGENUMBER = new byte[]{0x1B, 0x69, 0x41};
+    private static final byte[] CMD_SET_EXPANDED_MODE = new byte[]{0x1B, 0x69, 0x4B};
     private static final byte[] CMD_SET_MARGIN = new byte[]{0x1B, 0x69, 0x64};
     private static final byte[] CMD_RASTER_GRAPHIC_TRANSFER = new byte[]{0x67, 0x00};
     private static final byte[] CMD_PRINT = new byte[]{0x0C};
     private static final byte[] CMD_PRINT_LAST = new byte[]{0x1A};
-    private static final byte[] CMD_SWITCH_TO_RASTER = new byte[]{0x1B, 0x69, 0x61, 0x01};
 
     private static final byte PI_KIND = (byte) 0x02; // Paper type
     private static final byte PI_WIDTH = (byte) 0x04; // Paper width
@@ -78,6 +79,7 @@ public final class BrotherQLConnection implements Closeable {
      * Construct a connection to the device identified by the given printer identifier.
      * The identifier is a string like "usb://Brother/QL-700?serial=XXX"
      * See {@link #listDevices()} to get the identifiers of connected printers.
+     * If address is null, the first printer found is used.
      *
      * @param address the device address
      */
@@ -239,7 +241,7 @@ public final class BrotherQLConnection implements Closeable {
 
         BrotherQLMedia media = getMediaDefinition(status);
         List<BufferedImage> images = raster(job);
-        checkJob(images, media);
+        checkJob(job, images, media);
         sendControlCode(images, job, media);
 
         for (int i = 0; i < images.size(); i++) {
@@ -278,6 +280,7 @@ public final class BrotherQLConnection implements Closeable {
      * Convert the job images to monochrome according to the batch options
      * (dithering, brightness, threshold, rotation...).
      * This method can be used to preview the labels.
+     * If dpi600 option is set, the image width will be divided by 2.
      *
      * @param job the job
      * @return the rastered images
@@ -288,8 +291,17 @@ public final class BrotherQLConnection implements Closeable {
 
         for (BufferedImage image : images) {
             BufferedImage converted = image;
+            
+            int bodyLengthPx = image.getHeight();
+            int bodyWidthPx = image.getWidth();
+    
+            if (job.isDpi600()) {
+                // High DPI : divide width by 2 (300dpi) but preserve height (600 dpi)
+                converted = Converter.scale(converted, bodyWidthPx / 2, bodyLengthPx);
+            }
+            
             if (job.getRotate() != 0) {
-                converted = Converter.rotate(image, job.getRotate());
+                converted = Converter.rotate(converted, job.getRotate());
             }
 
             if (job.isDither()) {
@@ -335,18 +347,25 @@ public final class BrotherQLConnection implements Closeable {
         return false;
     }
 
-    private void checkJob(List<BufferedImage> images, BrotherQLMedia media) throws BrotherQLException {
+    private void checkJob(BrotherQLJob job, List<BufferedImage> images, BrotherQLMedia media) throws BrotherQLException {
         BufferedImage img = images.get(0);
         int bodyLengthPx = img.getHeight();
         int bodyWidthPx = img.getWidth();
+        int expectedBodyLengthPx = job.isDpi600() ? media.bodyLengthPx * 2 : media.bodyLengthPx;
+        int expectedBodyWidthPx = media.bodyWidthPx;
         LOGGER.log(Level.DEBUG, "Image size: " + bodyWidthPx + " x " + bodyLengthPx);
-        LOGGER.log(Level.DEBUG, "Expected Image size: " + media.bodyWidthPx + " x " + media.bodyLengthPx);
-
-        if (bodyWidthPx != media.bodyWidthPx) {
-            throw new BrotherQLException(String.format(Rx.msg("error.img.badwidth"), media.bodyWidthPx));
-        }
+        LOGGER.log(Level.DEBUG, "Expected Image size: " + expectedBodyWidthPx + " x " + expectedBodyLengthPx);
 
         BrotherQLModel model = device.getModel();
+
+        if (job.isDpi600() && !model.dpi600) {
+            throw new BrotherQLException(String.format(Rx.msg("error.dpi600.unsupported"), model.name));
+        }
+
+        if (bodyWidthPx != expectedBodyWidthPx) {
+            throw new BrotherQLException(String.format(Rx.msg("error.img.badwidth"), expectedBodyWidthPx));
+        }
+
         if (BrotherQLMediaType.CONTINUOUS_LENGTH_TAPE.equals(media.mediaType)) {
             if (bodyLengthPx < model.clMinLengthPx) {
                 throw new BrotherQLException(String.format(Rx.msg("error.img.minheight"), model.clMinLengthPx));
@@ -355,8 +374,8 @@ public final class BrotherQLConnection implements Closeable {
                 throw new BrotherQLException(String.format(Rx.msg("error.img.maxheight"), model.clMaxLengthPx));
             }
         } else {
-            if (bodyLengthPx != media.bodyLengthPx) {
-                throw new BrotherQLException(String.format(Rx.msg("error.img.badheight"), media.bodyLengthPx));
+            if (bodyLengthPx != expectedBodyLengthPx) {
+                throw new BrotherQLException(String.format(Rx.msg("error.img.badheight"), expectedBodyLengthPx));
             }
         }
 
@@ -382,18 +401,18 @@ public final class BrotherQLConnection implements Closeable {
             if (!BrotherQLMediaType.CONTINUOUS_LENGTH_TAPE.equals(media.mediaType)) {
                 pi |= PI_LENGTH;
             }
-            bos.write(pi);
+            bos.write(pi); // {n1}
 
             int bodyLengthPx = images.get(0).getHeight();
-            bos.write(media.mediaType.code);
-            bos.write(media.labelWidthMm & 0xFF);
-            bos.write(media.labelLengthMm & 0xFF);
-            bos.write(bodyLengthPx & 0xFF);
-            bos.write((bodyLengthPx >> 8) & 0xFF);
-            bos.write((bodyLengthPx >> 16) & 0xFF);
-            bos.write((bodyLengthPx >> 24) & 0xFF);
-            bos.write(STARTING_PAGE);
-            bos.write(0);
+            bos.write(media.mediaType.code); // {n2}
+            bos.write(media.labelWidthMm & 0xFF); // {n3}
+            bos.write(media.labelLengthMm & 0xFF); // {n4}
+            bos.write(bodyLengthPx & 0xFF); // {n5}
+            bos.write((bodyLengthPx >> 8) & 0xFF); // {n6}
+            bos.write((bodyLengthPx >> 16) & 0xFF); // {n7}
+            bos.write((bodyLengthPx >> 24) & 0xFF); // {n8}
+            bos.write(STARTING_PAGE); // {n9}
+            bos.write(0); // {n10}
 
             // Add autocut
             if (job.isAutocut()) {
@@ -404,6 +423,12 @@ public final class BrotherQLConnection implements Closeable {
                 bos.write(CMD_SET_AUTOCUT_OFF);
             }
 
+            // Set expanded mode / high resolution printing
+            if (job.isDpi600()) {
+                bos.write(CMD_SET_EXPANDED_MODE);
+                bos.write(1 << 6);
+            }
+                    
             // Set margins (in dots)
             int feedAmount = getFeedAmount(job, media);
             bos.write(CMD_SET_MARGIN);
