@@ -96,8 +96,8 @@ The identifier is to be used as parameter of the `BrotherQLConnection` construct
 
 ## Linux UDEV Configuration
 
-Please note that the package need Read/Write access to the USB printer device.
-It might be needed to add specific UDEV rules to add these right.
+Please note that the package needs Read/Write access to the USB printer device.
+It might be needed to add specific UDEV rules to add these rights.
 
 Example :
 
