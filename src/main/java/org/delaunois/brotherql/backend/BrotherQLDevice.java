@@ -67,4 +67,10 @@ public interface BrotherQLDevice {
      */
     void close();
 
+    /**
+     * Tells whether the device is a USB device.
+     * @return true if the device is a USB device, false otherwise
+     */
+    boolean isUsbPrinter();
+
 }

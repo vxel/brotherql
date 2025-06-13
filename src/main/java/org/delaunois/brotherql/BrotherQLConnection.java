@@ -7,6 +7,7 @@
 package org.delaunois.brotherql;
 
 import org.delaunois.brotherql.backend.BrotherQLDevice;
+import org.delaunois.brotherql.backend.BrotherQLDeviceTcp;
 import org.delaunois.brotherql.backend.BrotherQLDeviceUsb;
 import org.delaunois.brotherql.util.BitOutputStream;
 import org.delaunois.brotherql.util.Converter;
@@ -23,6 +24,27 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
+
+import static org.delaunois.brotherql.protocol.QL.CMD_INITIALIZE;
+import static org.delaunois.brotherql.protocol.QL.CMD_PRINT;
+import static org.delaunois.brotherql.protocol.QL.CMD_PRINT_INFORMATION;
+import static org.delaunois.brotherql.protocol.QL.CMD_PRINT_LAST;
+import static org.delaunois.brotherql.protocol.QL.CMD_RASTER_GRAPHIC_TRANSFER;
+import static org.delaunois.brotherql.protocol.QL.CMD_RESET;
+import static org.delaunois.brotherql.protocol.QL.CMD_SET_AUTOCUT_OFF;
+import static org.delaunois.brotherql.protocol.QL.CMD_SET_AUTOCUT_ON;
+import static org.delaunois.brotherql.protocol.QL.CMD_SET_CUT_PAGENUMBER;
+import static org.delaunois.brotherql.protocol.QL.CMD_SET_EXPANDED_MODE;
+import static org.delaunois.brotherql.protocol.QL.CMD_SET_MARGIN;
+import static org.delaunois.brotherql.protocol.QL.CMD_STATUS_REQUEST;
+import static org.delaunois.brotherql.protocol.QL.CMD_SWITCH_TO_RASTER;
+import static org.delaunois.brotherql.protocol.QL.PI_KIND;
+import static org.delaunois.brotherql.protocol.QL.PI_LENGTH;
+import static org.delaunois.brotherql.protocol.QL.PI_QUALITY;
+import static org.delaunois.brotherql.protocol.QL.PI_RECOVER;
+import static org.delaunois.brotherql.protocol.QL.PI_WIDTH;
+import static org.delaunois.brotherql.protocol.QL.STARTING_PAGE;
+import static org.delaunois.brotherql.protocol.QL.STATUS_SIZE;
 
 /**
  * Main class implementing the Brother QL printer raster protocol communication.
@@ -43,28 +65,6 @@ public final class BrotherQLConnection implements Closeable {
      */
     private static final int PRINT_TIMEOUT_MS = 2000;
 
-    private static final int STATUS_SIZE = 32;
-
-    private static final byte[] CMD_RESET = new byte[350];
-    private static final byte[] CMD_INITIALIZE = new byte[]{0x1B, 0x40};
-    private static final byte[] CMD_STATUS_REQUEST = new byte[]{0x1B, 0x69, 0x53};
-    private static final byte[] CMD_SWITCH_TO_RASTER = new byte[]{0x1B, 0x69, 0x61, 0x01};
-    private static final byte[] CMD_PRINT_INFORMATION = new byte[]{0x1B, 0x69, 0x7A};
-    private static final byte[] CMD_SET_AUTOCUT_ON = new byte[]{0x1B, 0x69, 0x4D, 0x40};
-    private static final byte[] CMD_SET_AUTOCUT_OFF = new byte[]{0x1B, 0x69, 0x4D, 0};
-    private static final byte[] CMD_SET_CUT_PAGENUMBER = new byte[]{0x1B, 0x69, 0x41};
-    private static final byte[] CMD_SET_EXPANDED_MODE = new byte[]{0x1B, 0x69, 0x4B};
-    private static final byte[] CMD_SET_MARGIN = new byte[]{0x1B, 0x69, 0x64};
-    private static final byte[] CMD_RASTER_GRAPHIC_TRANSFER = new byte[]{0x67, 0x00};
-    private static final byte[] CMD_PRINT = new byte[]{0x0C};
-    private static final byte[] CMD_PRINT_LAST = new byte[]{0x1A};
-
-    private static final byte PI_KIND = (byte) 0x02; // Paper type
-    private static final byte PI_WIDTH = (byte) 0x04; // Paper width
-    private static final byte PI_LENGTH = (byte) 0x08; // Paper length
-    private static final byte PI_QUALITY = (byte) 0x40; // Give priority to print quality
-    private static final byte PI_RECOVER = (byte) 0x80; // Always ON
-    private static final byte STARTING_PAGE = 0;
 
     private BrotherQLDevice device;
 
@@ -77,20 +77,23 @@ public final class BrotherQLConnection implements Closeable {
 
     /**
      * Construct a connection to the device identified by the given printer identifier.
-     * The identifier is a string like "usb://Brother/QL-700?serial=XXX"
-     * See {@link #listDevices()} to get the identifiers of connected printers.
-     * If address is null, the first printer found is used.
+     * The identifier is a string like "usb://Brother/QL-700?serial=XXX" for USB printer, and
+     * "tcp://host:port" for network printers.
+     * See {@link #listDevices()} to get the identifiers of USB connected printers.
+     * If address is null, the first USB printer found is used.
      *
      * @param address the device address
      */
     public BrotherQLConnection(String address) {
         if (address == null || address.isEmpty()) {
             this.device = new BrotherQLDeviceUsb();
-            
+
         } else {
             URI uri = URI.create(address);
             if ("usb".equals(uri.getScheme())) {
                 this.device = new BrotherQLDeviceUsb(uri);
+            } else if ("tcp".equals(uri.getScheme())) {
+                this.device = new BrotherQLDeviceTcp(uri);
             } else {
                 throw new UnsupportedOperationException("Scheme " + uri.getScheme() + " not supported");
             }
@@ -119,10 +122,10 @@ public final class BrotherQLConnection implements Closeable {
     }
 
     /**
-     * Search for a USB Brother printer and open a connection.
+     * Open a connection to the printer.
      *
      * @throws IllegalStateException if the printer is already opened
-     * @throws BrotherQLException    if the USB connection could not be established
+     * @throws BrotherQLException    if the connection could not be established
      */
     public void open() throws BrotherQLException {
         device.open();
@@ -207,7 +210,7 @@ public final class BrotherQLConnection implements Closeable {
     /**
      * Send the given Job for printing.
      *
-     * @param job            the job to print.
+     * @param job the job to print.
      * @throws BrotherQLException if the job is missing information, or if the printer is not ready,
      *                            or if another print error occurred
      */
@@ -253,13 +256,16 @@ public final class BrotherQLConnection implements Closeable {
 
             device.write(pc, TIMEOUT);
 
-            // Should read PHASE_CHANGE PHASE_PRINTING
-            status = readDeviceStatus();
-            int timeleft = PRINT_TIMEOUT_MS;
-            while (timeleft > 0 && (status == null || BrotherQLPhaseType.PHASE_PRINTING.equals(status.getPhaseType()))) {
-                timeleft -= 200;
-                sleep(200);
+            if (device.isUsbPrinter()) {
+                // For USB printers, a status is returned when the device starts printing
+                // Should read PHASE_CHANGE PHASE_PRINTING
                 status = readDeviceStatus();
+                int timeleft = PRINT_TIMEOUT_MS;
+                while (timeleft > 0 && (status == null || BrotherQLPhaseType.PHASE_PRINTING.equals(status.getPhaseType()))) {
+                    timeleft -= 200;
+                    sleep(200);
+                    status = readDeviceStatus();
+                }
             }
 
             if (statusListener != null) {
@@ -291,15 +297,15 @@ public final class BrotherQLConnection implements Closeable {
 
         for (BufferedImage image : images) {
             BufferedImage converted = image;
-            
+
             int bodyLengthPx = image.getHeight();
             int bodyWidthPx = image.getWidth();
-    
+
             if (job.isDpi600()) {
                 // High DPI : divide width by 2 (300dpi) but preserve height (600 dpi)
                 converted = Converter.scale(converted, bodyWidthPx / 2, bodyLengthPx);
             }
-            
+
             if (job.getRotate() != 0) {
                 converted = Converter.rotate(converted, job.getRotate());
             }
@@ -428,7 +434,7 @@ public final class BrotherQLConnection implements Closeable {
                 bos.write(CMD_SET_EXPANDED_MODE);
                 bos.write(1 << 6);
             }
-                    
+
             // Set margins (in dots)
             int feedAmount = getFeedAmount(job, media);
             bos.write(CMD_SET_MARGIN);

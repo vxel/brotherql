@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
+import static org.delaunois.brotherql.protocol.QL.STATUS_SIZE;
 import static org.usb4java.LibUsb.ENDPOINT_DIR_MASK;
 import static org.usb4java.LibUsb.ENDPOINT_IN;
 import static org.usb4java.LibUsb.ENDPOINT_OUT;
@@ -52,7 +53,6 @@ public class BrotherQLDeviceUsb implements BrotherQLDevice {
      * The vendor ID of the Brother QL Printer.
      */
     private static final short BROTHER_VENDOR_ID = 0x04f9;
-    private static final int STATUS_SIZE = 32;
 
     @Getter
     private BrotherQLModel model;
@@ -181,7 +181,7 @@ public class BrotherQLDeviceUsb implements BrotherQLDevice {
                     throw new BrotherQLException(Rx.msg("libusb.devicereadfailure"), result);
                 }
 
-                BrotherQLModel pId = BrotherQLModel.fromCode(descriptor.idProduct());
+                BrotherQLModel pId = BrotherQLModel.fromUsbProductId(descriptor.idProduct());
                 if (descriptor.idVendor() == BROTHER_VENDOR_ID && pId != null) {
                     DeviceHandle deviceHandle = openDevice(device);
                     String deviceSerial = LibUsb.getStringDescriptor(deviceHandle, descriptor.iSerialNumber());
@@ -257,7 +257,7 @@ public class BrotherQLDeviceUsb implements BrotherQLDevice {
                     throw new BrotherQLException(Rx.msg("libusb.devicereadfailure"), result);
                 }
 
-                BrotherQLModel pId = BrotherQLModel.fromCode(descriptor.idProduct());
+                BrotherQLModel pId = BrotherQLModel.fromUsbProductId(descriptor.idProduct());
                 if (descriptor.idVendor() == BROTHER_VENDOR_ID && pId != null && (model == null || pId == model)) {
                     // A known Brother device was found !
                     DeviceHandle deviceHandle = openDevice(device);
@@ -417,4 +417,9 @@ public class BrotherQLDeviceUsb implements BrotherQLDevice {
         context = new Context();
     }
 
+    @Override
+    public boolean isUsbPrinter() {
+        return true;
+    }
+    
 }

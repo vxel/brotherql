@@ -115,6 +115,24 @@ public class BrotherQLConnectionTest {
     }    
     
     @Test
+    public void testSendJobNetworkPrinter() throws IOException, BrotherQLException {
+        deviceSimulator.setUsbPrinter(false);
+        InputStream is = PrintExample.class.getResourceAsStream("/white-dove-696.png");
+        InputStream rasterIs = PrintExample.class.getResourceAsStream("/white-dove-696.raster");
+        String raster = new String(Objects.requireNonNull(rasterIs).readAllBytes());
+        BufferedImage img = ImageIO.read(Objects.requireNonNull(is));
+        
+        BrotherQLJob job = new BrotherQLJob()
+                .setAutocut(true)
+                .setBrightness(1.0f)
+                .setImages(List.of(img));
+                        
+        connection.sendJob(job);
+
+        assertEquals(raster, deviceSimulator.getTx());
+    }    
+
+    @Test
     public void testSendJobDpi600() throws IOException, BrotherQLException {
         InputStream is = PrintExample.class.getResourceAsStream("/white-dove-1392.png");
         InputStream rasterIs = PrintExample.class.getResourceAsStream("/white-dove-1392.raster");

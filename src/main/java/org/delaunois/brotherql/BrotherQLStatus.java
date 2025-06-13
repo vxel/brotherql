@@ -19,14 +19,14 @@ import java.util.Objects;
 public class BrotherQLStatus {
 
     private static final byte[] UNAVAILABLE = new byte[]{
-            0, 0, 0, 0, 0, 0, 0, 0,
+            (byte)0x80, 0x20, 0x42, 0, 0, 0, 0, 0,
             0, 0, 0, BrotherQLMediaType.UNKNOWN.code, 0, 0, 0, 0,
             0, 0, BrotherQLStatusType.PRINTER_UNAVAILABLE.code, BrotherQLPhaseType.UNKNOWN.code, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0
     };
 
     private static final byte[] NOT_CONNECTED = new byte[]{
-            0, 0, 0, 0, 0, 0, 0, 0,
+            (byte)0x80, 0x20, 0x42, 0, 0, 0, 0, 0,
             0, 0, 0, BrotherQLMediaType.UNKNOWN.code, 0, 0, 0, 0,
             0, 0, BrotherQLStatusType.PRINTER_NOT_CONNECTED.code, BrotherQLPhaseType.UNKNOWN.code, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0

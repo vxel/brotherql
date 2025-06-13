@@ -1,9 +1,9 @@
 # Java library for printing labels using the raster language protocol on Brother QL printers
 
-A Java library for printing labels via USB on Brother QL series label printers.
+A Java library for printing labels on Brother QL series label printers.
 
 This package implements the raster language protocol and allows you to control these printers
-and receive status via USB connection.
+and receive status via USB or Network connection.
 No printer driver is required since this package communicates directly with the label printer.
 It allows to bypass difficulties encountered by many drivers and generic printing API
 to set the page sizes and margins, in particular for endless labels.
@@ -14,13 +14,18 @@ The following printers should be supported:
 - Brother QL-560
 - Brother QL-570
 - Brother QL-580N
+- Brother QL-600
 - Brother QL-650TD
 - Brother QL-700
 - Brother QL-700M
+- Brother QL-710W
+- Brother QL-710NW
 - Brother QL-1050
 - Brother QL-1060N
                      
 The code has been developed and tested on a Brother QL-700 printer, on Linux.
+Please report if you successfully tested the library with another printer, or if you encountered any problem.
+Support for network printers is experimental as I do not have such printer.
 
 Options supported (see BrotherQLJob javadoc for more details):
 - **autocut**: whether to automatically cut the label (default is true)
@@ -93,10 +98,12 @@ of a model (see `BrotherQLModel` enum class), and `?serial=XXXX` is optional and
 of the printer to use.
 The identifier is to be used as parameter of the `BrotherQLConnection` constructor.
 
+For network printers, use an identifier like `tcp://localhost:9100`.
+
 
 ## Linux UDEV Configuration
 
-Please note that the package needs Read/Write access to the USB printer device.
+Please note that the package needs Read/Write access to USB printer devices.
 It might be needed to add specific UDEV rules to add these rights.
 
 Example :

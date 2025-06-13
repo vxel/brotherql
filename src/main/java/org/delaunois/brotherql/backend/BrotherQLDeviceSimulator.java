@@ -1,6 +1,7 @@
 package org.delaunois.brotherql.backend;
 
 import lombok.Getter;
+import lombok.Setter;
 import org.delaunois.brotherql.BrotherQLMedia;
 import org.delaunois.brotherql.BrotherQLPhaseType;
 import org.delaunois.brotherql.BrotherQLModel;
@@ -38,6 +39,13 @@ public class BrotherQLDeviceSimulator implements BrotherQLDevice {
     @Getter
     private String tx = "";
 
+    /**
+     * Defines whether the class simulates a USB printer or a Network printer.
+     */
+    @Getter
+    @Setter
+    private boolean usbPrinter = true;
+    
     /**
      * Simulate a brother QL printer with the given id and given media.
      * 
@@ -134,11 +142,12 @@ public class BrotherQLDeviceSimulator implements BrotherQLDevice {
     public void close() {
         open = false;
     }
-
+    
     /**
      * Clears the bytes received by the simulator.
      */
     public void clearTx() {
         tx = "";
     }
+
 }

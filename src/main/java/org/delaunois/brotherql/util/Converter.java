@@ -195,7 +195,15 @@ public class Converter {
         graphics2D.drawRenderedImage(src, null);
         return dest;
     }
-    
+
+    /**
+     * Scale the image to the given size.
+     * 
+     * @param img the image to scale
+     * @param width the target width
+     * @param height the target height
+     * @return the scaled image
+     */
     public static BufferedImage scale(BufferedImage img, int width, int height) {
         BufferedImage newImage = new BufferedImage(width, height,
                 BufferedImage.TYPE_INT_RGB);
