@@ -58,6 +58,14 @@ public class BrotherQLConnectionTest {
     }
 
     @Test
+    public void testReadStatusTcpConnectionNotOpen() throws BrotherQLException {
+        try (BrotherQLConnection con = new BrotherQLConnection("tcp://localhost:9100")) {
+            BrotherQLStatus status = con.requestDeviceStatus();
+            assertNotNull("Status should not be null", status);
+        }
+    }
+
+    @Test
     public void testSetMediaAndReadStatus() {
         // Update the media in the simulator
         BrotherQLMedia newMedia = BrotherQLMedia.CT_29_720; // 29mm continuous tape
