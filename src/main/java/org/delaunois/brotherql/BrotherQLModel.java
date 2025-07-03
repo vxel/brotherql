@@ -69,9 +69,24 @@ public enum BrotherQLModel {
     QL_710_W("QL-710W", 0x2043, 0x36, false, 150, 11811, true, true),
 
     /**
-     * Brother QL-710W
+     * Brother QL-720NW
      */
     QL_720_NW("QL-720NW", 0x2044, 0x37, false, 150, 11811, true, true),
+
+    /**
+     * Brother QL-800
+     */
+    QL_800("QL-800", 0x209b, 0x38, false, 150, 11811, true, true),
+
+    /**
+     * Brother QL-810W
+     */
+    QL_810W("QL-810W", 0x209c, 0x39, false, 150, 11811, true, true),
+
+    /**
+     * Brother QL-820NWB
+     */
+    QL_810NWB("QL-820NWB", 0x209d, 0x41, false, 150, 11811, true, true),
 
     /**
      * Brother QL-1050
@@ -82,6 +97,21 @@ public enum BrotherQLModel {
      * Brother QL-1060N
      */
     QL_1060N("QL-1060N", 0x202A, 0x34, true, 295, 35433, false, false),
+
+    /**
+     * Brother QL-1100
+     */
+    QL_1100("QL-1100", 0x20a7, 0x43, false, 150, 35433, true, false),
+
+    /**
+     * Brother QL-1110NWB
+     */
+    QL_1110NWB("QL-1110NWB", 0x20a8, 0x44, false, 150, 35433, true, false),
+
+    /**
+     * Brother QL-1115NWB
+     */
+    QL_1115NWB("QL-1115NWB", 0x20ab, 0x45, false, 150, 35433, true, false),
 
     /**
      * Unknown printer

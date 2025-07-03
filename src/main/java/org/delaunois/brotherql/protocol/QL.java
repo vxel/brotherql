@@ -15,7 +15,7 @@ public class QL {
     /**
      * Reset command
      */
-    public static final byte[] CMD_RESET = new byte[350];
+    public static final byte[] CMD_RESET = new byte[400];
 
     /**
      * Initialize command

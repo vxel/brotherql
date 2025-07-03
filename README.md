@@ -19,13 +19,20 @@ The following printers should be supported:
 - Brother QL-700
 - Brother QL-700M
 - Brother QL-710W
-- Brother QL-710NW
+- Brother QL-720NW
+- Brother QL-800
+- Brother QL-810W
+- Brother QL-820NWB
 - Brother QL-1050
 - Brother QL-1060N
+- Brother QL-1100
+- Brother QL-1110NWB
+- Brother QL-1115NWB
                      
 The code has been developed and tested on a Brother QL-700 printer, on Linux.
 Please report if you successfully tested the library with another printer, or if you encountered any problem.
 Support for network printers is experimental as I do not have such printer.
+Two-color printing is not support yet.
 
 Options supported (see BrotherQLJob javadoc for more details):
 - **autocut**: whether to automatically cut the label (default is true)
