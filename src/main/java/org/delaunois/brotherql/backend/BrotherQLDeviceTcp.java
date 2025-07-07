@@ -1,5 +1,7 @@
 package org.delaunois.brotherql.backend;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.delaunois.brotherql.BrotherQLException;
 import org.delaunois.brotherql.BrotherQLModel;
 
@@ -8,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.System.Logger.Level;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -25,10 +28,20 @@ public class BrotherQLDeviceTcp implements BrotherQLDevice{
     private static final System.Logger LOGGER = System.getLogger(BrotherQLDeviceTcp.class.getName());
     
     private static final int DEFAULT_PORT = 9100;
+    private static final int DEFAULT_CONNECT_TIMEOUT = 5000;
+    private static final int DEFAULT_READ_TIMEOUT = 5000;
 
     private final URI uri;
     private Socket socket = null;
     
+    @Getter
+    @Setter
+    private int connectTimeout = DEFAULT_CONNECT_TIMEOUT;
+    
+    @Getter
+    @Setter
+    private int readTimeout = DEFAULT_READ_TIMEOUT;
+
     /**
      * Construct the backend for a network Brother printer identified by the given URI.
      * Default port is 9100.
@@ -45,7 +58,7 @@ public class BrotherQLDeviceTcp implements BrotherQLDevice{
             throw new IllegalArgumentException("Only tcp scheme is supported for network devices");
         }
     }
-    
+
     @Override
     public void open() throws BrotherQLException {
         if (socket != null) {
@@ -54,7 +67,8 @@ public class BrotherQLDeviceTcp implements BrotherQLDevice{
         
         int port = uri.getPort() > 0 ? uri.getPort() : DEFAULT_PORT;
         try {
-          socket = new Socket(uri.getHost(), port);
+          socket = new Socket();
+          socket.connect(new InetSocketAddress(uri.getHost(), port), connectTimeout);
         } catch  (IOException e) {
             throw new BrotherQLException(e.getMessage());
         }        
@@ -67,8 +81,8 @@ public class BrotherQLDeviceTcp implements BrotherQLDevice{
         }
 
         try {
-            write(CMD_STATUS_REQUEST, 1000);
-            ByteBuffer bb = readStatus(1000);
+            write(CMD_STATUS_REQUEST, 0);
+            ByteBuffer bb = readStatus(readTimeout);
             if (bb != null) {
                 int model = bb.get(4) & 0xFF;
                 return BrotherQLModel.fromModelCode(model);
@@ -87,6 +101,7 @@ public class BrotherQLDeviceTcp implements BrotherQLDevice{
         }
 
         try {
+            socket.setSoTimeout((int) timeout);
             InputStream in = socket.getInputStream();
             byte[] buffer = new byte[STATUS_SIZE];
             int read = in.read(buffer);
@@ -115,6 +130,7 @@ public class BrotherQLDeviceTcp implements BrotherQLDevice{
             DataOutputStream dos = new DataOutputStream(out);
             if (data.length > 0) {
                 dos.write(data, 0, data.length);
+                dos.flush();
             }
         } catch (IOException e) {
             throw new BrotherQLException(e.getMessage());

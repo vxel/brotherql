@@ -167,7 +167,12 @@ public final class BrotherQLConnection implements Closeable {
         }
 
         device.write(CMD_STATUS_REQUEST, TIMEOUT);
-        return readDeviceStatus();
+        BrotherQLStatus status = readDeviceStatus();
+        if (status == null) {
+            return new BrotherQLStatus(null, device.getModel(), Rx.msg("error.readerror"));
+        }
+        
+        return status;
     }
 
     /**
