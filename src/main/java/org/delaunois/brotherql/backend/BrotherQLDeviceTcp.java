@@ -71,7 +71,7 @@ public class BrotherQLDeviceTcp implements BrotherQLDevice{
             throw new IllegalArgumentException("Device model is required for network devices");
         }
         
-        model = BrotherQLModel.fromModelName(uri.getPath());
+        model = BrotherQLModel.fromModelName(uri.getPath().substring(1));
     }
 
     @Override

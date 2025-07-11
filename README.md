@@ -73,8 +73,13 @@ Here is a quick example of how to print a label using the library:
             .setDither(true)
             .setDelay(1000)
             .setImages(List.of(image));
+
+    // Required only for Network printers.
+    // For USB printers, the media is automatically detected and given by the printer status.
+    job.setMedia(BrotherQLMedia.CT_62_720);
     
     // Print the job, using the first detected USB Brother printer
+    // For a network printer, use: new BrotherQLConnection("tcp://host:post/model")
     BrotherQLConnection connection = new BrotherQLConnection();
     try (connection) {
         // Open the connection with the printer

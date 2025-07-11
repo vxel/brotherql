@@ -62,6 +62,7 @@ public class BrotherQLConnectionTest {
         try (BrotherQLConnection con = new BrotherQLConnection("tcp://localhost:9100/QL-720NW")) {
             BrotherQLStatus status = con.requestDeviceStatus();
             assertNotNull("Status should not be null", status);
+            assertEquals(BrotherQLModel.QL_720_NW, con.getModel());
         }
     }
 
