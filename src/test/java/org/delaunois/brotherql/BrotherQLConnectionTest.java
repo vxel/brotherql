@@ -59,7 +59,7 @@ public class BrotherQLConnectionTest {
 
     @Test
     public void testReadStatusTcpConnectionNotOpen() throws BrotherQLException {
-        try (BrotherQLConnection con = new BrotherQLConnection("tcp://localhost:9100")) {
+        try (BrotherQLConnection con = new BrotherQLConnection("tcp://localhost:9100/QL-720NW")) {
             BrotherQLStatus status = con.requestDeviceStatus();
             assertNotNull("Status should not be null", status);
         }
@@ -132,6 +132,7 @@ public class BrotherQLConnectionTest {
         
         BrotherQLJob job = new BrotherQLJob()
                 .setAutocut(true)
+                .setMedia(BrotherQLMedia.CT_62_720)
                 .setBrightness(1.0f)
                 .setImages(List.of(img));
                         

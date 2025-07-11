@@ -78,7 +78,7 @@ public final class BrotherQLConnection implements Closeable {
     /**
      * Construct a connection to the device identified by the given printer identifier.
      * The identifier is a string like "usb://Brother/QL-700?serial=XXX" for USB printer, and
-     * "tcp://host:port" for network printers.
+     * "tcp://host:port/QL-720NW" for network printers.
      * See {@link #listDevices()} to get the identifiers of USB connected printers.
      * If address is null, the first USB printer found is used.
      *
@@ -139,6 +139,7 @@ public final class BrotherQLConnection implements Closeable {
      * @throws BrotherQLException if the reset instruction could not be sent
      */
     public void reset() throws BrotherQLException {
+        device.write(CMD_SWITCH_TO_RASTER, TIMEOUT);
         device.write(CMD_RESET, TIMEOUT);
         device.write(CMD_INITIALIZE, TIMEOUT);
     }
@@ -204,6 +205,7 @@ public final class BrotherQLConnection implements Closeable {
 
     /**
      * Extract the media definition from the given printer status.
+     * Only for USB printers.
      *
      * @param status the printer status
      * @return the media definition
@@ -235,10 +237,16 @@ public final class BrotherQLConnection implements Closeable {
      */
     public void sendJob(BrotherQLJob job, BiFunction<Integer, BrotherQLStatus, Boolean> statusListener)
             throws BrotherQLException {
+        
+        if (device.isClosed()
+                || device.getModel() == null
+                || device.getModel().equals(BrotherQLModel.UNKNOWN)) {
+            throw new BrotherQLException(Rx.msg("statustype.notconnected"));
+        }
+        
         if (job == null
                 || job.getImages() == null
-                || job.getImages().isEmpty()
-                || device.isClosed()) {
+                || job.getImages().isEmpty()) {
             throw new BrotherQLException(Rx.msg("error.incompletejob"));
         }
 
@@ -247,7 +255,11 @@ public final class BrotherQLConnection implements Closeable {
             throw new BrotherQLException(Rx.msg("error.notready"));
         }
 
-        BrotherQLMedia media = getMediaDefinition(status);
+        BrotherQLMedia media = device.isUsbPrinter() ? getMediaDefinition(status) : job.getMedia();
+        if (media == null) {
+            throw new BrotherQLException(Rx.msg("mediatype.unknown"));
+        }
+        
         List<BufferedImage> images = raster(job);
         checkJob(job, images, media);
         sendControlCode(images, job, media);

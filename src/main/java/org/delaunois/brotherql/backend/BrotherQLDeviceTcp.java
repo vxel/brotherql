@@ -3,20 +3,19 @@ package org.delaunois.brotherql.backend;
 import lombok.Getter;
 import lombok.Setter;
 import org.delaunois.brotherql.BrotherQLException;
+import org.delaunois.brotherql.BrotherQLMediaType;
 import org.delaunois.brotherql.BrotherQLModel;
+import org.delaunois.brotherql.BrotherQLPhaseType;
+import org.delaunois.brotherql.BrotherQLStatusType;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.System.Logger.Level;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.ByteBuffer;
-
-import static org.delaunois.brotherql.protocol.QL.CMD_STATUS_REQUEST;
-import static org.delaunois.brotherql.protocol.QL.STATUS_SIZE;
 
 /**
  * Access layer to TCP/IP Brother QL device printers.
@@ -31,6 +30,13 @@ public class BrotherQLDeviceTcp implements BrotherQLDevice{
     private static final int DEFAULT_CONNECT_TIMEOUT = 5000;
     private static final int DEFAULT_READ_TIMEOUT = 5000;
 
+    private static final byte[] READY = new byte[]{
+            (byte)0x80, 0x20, 0x42, 0, 0, 0, 0, 0,
+            0, 0, 0, BrotherQLMediaType.UNKNOWN.code, 0, 0, 0, 0,
+            0, 0, BrotherQLStatusType.READY.code, BrotherQLPhaseType.WAITING_TO_RECEIVE.code, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0
+    };
+
     private final URI uri;
     private Socket socket = null;
     
@@ -41,6 +47,9 @@ public class BrotherQLDeviceTcp implements BrotherQLDevice{
     @Getter
     @Setter
     private int readTimeout = DEFAULT_READ_TIMEOUT;
+    
+    @Getter
+    private BrotherQLModel model;
 
     /**
      * Construct the backend for a network Brother printer identified by the given URI.
@@ -57,6 +66,12 @@ public class BrotherQLDeviceTcp implements BrotherQLDevice{
         if (!"tcp".equals(uri.getScheme())) {
             throw new IllegalArgumentException("Only tcp scheme is supported for network devices");
         }
+        
+        if (uri.getPath() == null || uri.getPath().isEmpty()) {
+            throw new IllegalArgumentException("Device model is required for network devices");
+        }
+        
+        model = BrotherQLModel.fromModelName(uri.getPath());
     }
 
     @Override
@@ -73,50 +88,10 @@ public class BrotherQLDeviceTcp implements BrotherQLDevice{
             throw new BrotherQLException(e.getMessage());
         }        
     }
-
-    @Override
-    public BrotherQLModel getModel() {
-        if (socket == null) {
-            return BrotherQLModel.UNKNOWN;
-        }
-
-        try {
-            write(CMD_STATUS_REQUEST, 0);
-            ByteBuffer bb = readStatus(readTimeout);
-            if (bb != null) {
-                int model = bb.get(4) & 0xFF;
-                return BrotherQLModel.fromModelCode(model);
-            }
-        } catch (BrotherQLException e) {
-            LOGGER.log(Level.WARNING, "Error sending status information request", e);
-        }
-
-        return BrotherQLModel.UNKNOWN;
-    }
-
+    
     @Override
     public ByteBuffer readStatus(long timeout) {
-        if (socket == null) {
-            throw new IllegalStateException("Device is not open");
-        }
-
-        try {
-            socket.setSoTimeout((int) timeout);
-            InputStream in = socket.getInputStream();
-            byte[] buffer = new byte[STATUS_SIZE];
-            int read = in.read(buffer);
-            if (read > 0) {
-                ByteBuffer bb = ByteBuffer.allocate(read);
-                bb.put(buffer, 0, read);
-                bb.rewind();
-                return bb;
-            } else {
-                LOGGER.log(Level.WARNING, "No data received from printer");
-            }
-        } catch (IOException e) {
-            // Ignore
-        }
-        return null;
+        return ByteBuffer.wrap(READY);
     }
 
     @Override
@@ -152,6 +127,7 @@ public class BrotherQLDeviceTcp implements BrotherQLDevice{
             }
             socket = null;
         }
+        model = null;
     }
     
     @Override

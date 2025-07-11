@@ -120,11 +120,13 @@ public enum BrotherQLModel {
 
     private static final Map<Integer, BrotherQLModel> USB_PRODUCT_ID_MAP = new HashMap<>();
     private static final Map<Integer, BrotherQLModel> MODEL_CODE_MAP = new HashMap<>();
+    private static final Map<String, BrotherQLModel> MODEL_NAME_MAP = new HashMap<>();
 
     static {
         for (BrotherQLModel mt : BrotherQLModel.values()) {
             USB_PRODUCT_ID_MAP.put(mt.usbProductId, mt);
             MODEL_CODE_MAP.put(mt.modelCode, mt);
+            MODEL_NAME_MAP.put(mt.name, mt);
         }
     }
 
@@ -200,6 +202,17 @@ public enum BrotherQLModel {
      */
     public static BrotherQLModel fromModelCode(int modelCode) {
         BrotherQLModel model = MODEL_CODE_MAP.get(modelCode);
+        return model == null ? UNKNOWN : model;
+    }
+
+    /**
+     * Identify the printer based on its name.
+     *
+     * @param modelName the model name
+     * @return the printer model
+     */
+    public static BrotherQLModel fromModelName(String modelName) {
+        BrotherQLModel model = MODEL_NAME_MAP.get(modelName);
         return model == null ? UNKNOWN : model;
     }
 

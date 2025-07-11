@@ -30,6 +30,7 @@ public interface BrotherQLDevice {
     /**
      * Get the printer model.
      * The device must be opened first.
+     * For network printers, the model is not known until a device status is received.
      *
      * @return the printer model or null if no Brother printer were detected
      */

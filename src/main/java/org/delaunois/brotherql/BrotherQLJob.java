@@ -95,4 +95,11 @@ public class BrotherQLJob {
      */
     private boolean dpi600 = false;
 
+    /**
+     * Defines the target media (size, type - die-cut or endless).
+     * Optional for USB printers as the media is detected and provided by the printer.
+     * Required for Network printers.
+     */
+    private BrotherQLMedia media;
+
 }

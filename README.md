@@ -3,7 +3,7 @@
 A Java library for printing labels on Brother QL series label printers.
 
 This package implements the raster language protocol and allows you to control these printers
-and receive status via USB or Network connection.
+and receive status (for USB printers only).
 No printer driver is required since this package communicates directly with the label printer.
 It allows to bypass difficulties encountered by many drivers and generic printing API
 to set the page sizes and margins, in particular for endless labels.
@@ -46,6 +46,7 @@ Options supported (see BrotherQLJob javadoc for more details):
 - **brightness**: Brightness factor applied before dithering. Higher means brighter.
 - **rotate**: rotate the image (clock-wise) by this angle in degrees. Accepted angles are multiple of 90 degrees (90, 180, 270).
 - **dpi600**: use 600 dpi height x 300 dpi wide resolution. Only available on some models. The image must be provided as 600x600 dpi. The width will be resized to 300dpi.
+- **media**: the label size and type. Required only for network printer. Automatically detected for USB printers.
 
 ## Maven dependency
 
@@ -105,8 +106,9 @@ of a model (see `BrotherQLModel` enum class), and `?serial=XXXX` is optional and
 of the printer to use.
 The identifier is to be used as parameter of the `BrotherQLConnection` constructor.
 
-For network printers, use an identifier like `tcp://localhost:9100`.
-
+For network printers, use an identifier like `tcp://localhost:9100/QL-720NW`, where `localhost` is the IP address 
+or hostname of the printer, `9100` is the port (`9100` is the default port), and `QL-720NW` is the name of 
+the printer model (see `BrotherQLModel` enum class).
 
 ## Linux UDEV Configuration
 

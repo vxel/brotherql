@@ -3,16 +3,14 @@ package org.delaunois.brotherql.backend;
 import lombok.Getter;
 import lombok.Setter;
 import org.delaunois.brotherql.BrotherQLMedia;
-import org.delaunois.brotherql.BrotherQLPhaseType;
 import org.delaunois.brotherql.BrotherQLModel;
+import org.delaunois.brotherql.BrotherQLPhaseType;
 import org.delaunois.brotherql.BrotherQLStatusType;
 import org.delaunois.brotherql.util.Hex;
-import org.usb4java.BufferUtils;
 
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 /**
  * A dummy implementation of BrotherQLDevice interface
@@ -120,11 +118,8 @@ public class BrotherQLDeviceSimulator implements BrotherQLDevice {
 
     @Override
     public ByteBuffer readStatus(long timeout) {
-        ByteBuffer buffer = BufferUtils.allocateByteBuffer(32).order(ByteOrder.LITTLE_ENDIAN);
-        buffer.put(status);
-        buffer.rewind();
         LOGGER.log(Level.INFO, "Rx: " + Hex.toString(status));
-        return buffer;
+        return ByteBuffer.wrap(status);
     }
 
     @Override
