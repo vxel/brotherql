@@ -102,10 +102,9 @@ public class BrotherQLDeviceTcp implements BrotherQLDevice{
         
         try {
             OutputStream out = socket.getOutputStream(); 
-            DataOutputStream dos = new DataOutputStream(out);
             if (data.length > 0) {
+                DataOutputStream dos = new DataOutputStream(out);
                 dos.write(data, 0, data.length);
-                dos.flush();
             }
         } catch (IOException e) {
             throw new BrotherQLException(e.getMessage());

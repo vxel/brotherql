@@ -19,10 +19,10 @@ import java.nio.ByteBuffer;
 public interface BrotherQLDevice {
 
     /**
-     * Search for a USB Brother printer and open a connection.
+     * Search for a Brother printer and open a connection.
      *
      * @throws IllegalStateException if the printer is already opened
-     * @throws BrotherQLException    if the USB connection could not be established (e.g. device not found,
+     * @throws BrotherQLException    if the connection could not be established (e.g. device not found,
      *                               not connected, busy)
      */
     void open() throws BrotherQLException;
@@ -48,9 +48,9 @@ public interface BrotherQLDevice {
     /**
      * Writes some data to the printer.
      *
+     * @param data    the data to send to the printer.
      * @param timeout timeout (in milliseconds) that this function should wait before giving up due to no
      *                response being received. For an unlimited timeout, use value 0.
-     * @param data    the data to send to the printer.
      * @throws BrotherQLException if the data could not be sent
      */
     void write(byte[] data, long timeout) throws BrotherQLException;

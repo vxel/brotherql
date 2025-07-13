@@ -139,6 +139,7 @@ public final class BrotherQLConnection implements Closeable {
      * @throws BrotherQLException if the reset instruction could not be sent
      */
     public void reset() throws BrotherQLException {
+        // Switch to raster if multiple modes exist
         device.write(CMD_SWITCH_TO_RASTER, TIMEOUT);
         device.write(CMD_RESET, TIMEOUT);
         device.write(CMD_INITIALIZE, TIMEOUT);
@@ -250,6 +251,8 @@ public final class BrotherQLConnection implements Closeable {
             throw new BrotherQLException(Rx.msg("error.incompletejob"));
         }
 
+        device.write(CMD_SWITCH_TO_RASTER, TIMEOUT);
+
         BrotherQLStatus status = requestDeviceStatus();
         if (status.getStatusType() != BrotherQLStatusType.READY) {
             throw new BrotherQLException(Rx.msg("error.notready"));
@@ -258,6 +261,11 @@ public final class BrotherQLConnection implements Closeable {
         BrotherQLMedia media = device.isUsbPrinter() ? getMediaDefinition(status) : job.getMedia();
         if (media == null) {
             throw new BrotherQLException(Rx.msg("mediatype.unknown"));
+        }
+        
+        if (media.twoColor && device.getModel().twoColor) {
+            // Black-Red not supported (yet)
+            throw new BrotherQLException(Rx.msg("mediatype.unknown"));    
         }
         
         List<BufferedImage> images = raster(job);
@@ -412,12 +420,7 @@ public final class BrotherQLConnection implements Closeable {
     private void sendControlCode(List<BufferedImage> images, BrotherQLJob job, BrotherQLMedia media) throws BrotherQLException {
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
-
-            // Switch to raster if multiple modes exist
-            if (!device.getModel().rasterOnly) {
-                bos.write(CMD_SWITCH_TO_RASTER);
-            }
-
+            
             // Add print info
             bos.write(CMD_PRINT_INFORMATION);
             byte pi = (byte) (PI_KIND | PI_WIDTH | PI_QUALITY | PI_RECOVER);
@@ -497,7 +500,7 @@ public final class BrotherQLConnection implements Closeable {
                 }
 
                 // Write right margin
-                for (int i = 0; i < media.leftMarginPx; i++) {
+                for (int i = 0; i < media.rightMarginPx; i++) {
                     bitOutputStream.write(0);
                 }
 
