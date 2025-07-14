@@ -68,6 +68,16 @@ public class QL {
     public static final byte[] CMD_RASTER_GRAPHIC_TRANSFER = new byte[]{0x67, 0x00};
 
     /**
+     * Two-color raster graphic transfer command first color
+     */
+    public static final byte[] CMD_TWO_COLOR_RASTER_GRAPHIC_TRANSFER_FIRST = new byte[]{0x77, 0x01};
+
+    /**
+     * Two-color raster graphic transfer command second color
+     */
+    public static final byte[] CMD_TWO_COLOR_RASTER_GRAPHIC_TRANSFER_SECOND = new byte[]{0x77, 0x02};
+
+    /**
      * Print command
      */
     public static final byte[] CMD_PRINT = new byte[]{0x0C};

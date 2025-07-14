@@ -19,8 +19,8 @@ import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 
+import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.ERROR;
-import static java.lang.System.Logger.Level.INFO;
 import static org.junit.Assert.assertEquals;
 
 public class BrotherQLDeviceTcpTest {
@@ -30,20 +30,23 @@ public class BrotherQLDeviceTcpTest {
 
     private ServerSocket serverSocket;
     private Thread serverThread;
-    private final StringBuilder receivedData = new StringBuilder();
+    private final ByteArrayOutputStream receivedData = new ByteArrayOutputStream();
 
     @Test
     public void testRequestStatus() throws Exception {
         startServer();
-        BrotherQLDeviceTcp device = new BrotherQLDeviceTcp(URI.create("tcp://localhost:" + DEFAULT_PORT + "/" + BrotherQLModel.QL_820NWB.name));
-        BrotherQLConnection connection = new BrotherQLConnection(device);
-        connection.open();
-        connection.close();
-        stopServer();
+        try {
+            BrotherQLDeviceTcp device = new BrotherQLDeviceTcp(URI.create("tcp://localhost:" + DEFAULT_PORT + "/" + BrotherQLModel.QL_820NWB.name));
+            BrotherQLConnection connection = new BrotherQLConnection(device);
+            connection.open();
+            connection.close();
+        } finally {
+            stopServer();
+        }
 
         InputStream rasterIs = PrintExample.class.getResourceAsStream("/init.raster");
         String raster = new String(Objects.requireNonNull(rasterIs).readAllBytes());
-        assertEquals(raster, receivedData.toString());
+        assertEquals(raster, Hex.toString(receivedData.toByteArray()));
     }
 
     @Test
@@ -61,41 +64,43 @@ public class BrotherQLDeviceTcpTest {
                 .setImages(List.of(img));
         
         startServer();
-        BrotherQLDeviceTcp device = new BrotherQLDeviceTcp(URI.create("tcp://localhost:" + DEFAULT_PORT + "/" + BrotherQLModel.QL_820NWB.name));
-        BrotherQLConnection connection = new BrotherQLConnection(device);
-        connection.open();
-        connection.sendJob(job);
-        connection.close();
-        stopServer();
+        try {
+            BrotherQLDeviceTcp device = new BrotherQLDeviceTcp(URI.create("tcp://localhost:" + DEFAULT_PORT + "/" + BrotherQLModel.QL_820NWB.name));
+            BrotherQLConnection connection = new BrotherQLConnection(device);
+            connection.open();
+            connection.sendJob(job);
+            connection.close();
+        } finally {
+            stopServer();
+        }
 
-        LOGGER.log(INFO, "Rx:\n" + dumpHex(receivedData.toString()));
+        LOGGER.log(DEBUG, "Rx:\n" + Hex.prettyDump(receivedData.toByteArray()));
         
-        assertEquals(raster, receivedData.toString());
+        assertEquals(raster, Hex.toString(receivedData.toByteArray()));
     }
 
     private void startServer() throws IOException {
-        receivedData.delete(0, receivedData.length());
+        receivedData.reset();
         // Starts a server socket that listens to request
         serverSocket = new ServerSocket(DEFAULT_PORT);
+        serverSocket.setSoTimeout(10000);
 
         // Lance un thread pour accepter les connexions et lire les données reçues
         serverThread = new Thread(() -> {
+            LOGGER.log(DEBUG, "Server started");
             try {
                 while (!Thread.currentThread().isInterrupted()) {
                     // Accepte une connexion
+                    LOGGER.log(DEBUG, "Server listening on port " + DEFAULT_PORT);
                     try (Socket clientSocket = serverSocket.accept();
-                         InputStream inputStream = clientSocket.getInputStream();
-                         ByteArrayOutputStream buffer = new ByteArrayOutputStream()
+                         InputStream inputStream = clientSocket.getInputStream()
                     ) {
                         byte[] data = new byte[1024];
                         int bytesRead;
-                        while ((bytesRead = inputStream.read(data)) != -1) {
-                            buffer.write(data, 0, bytesRead);
-                        }
-
                         synchronized (receivedData) {
-                            byte[] rx = buffer.toByteArray();
-                            receivedData.append(Hex.toString(rx));
+                            while ((bytesRead = inputStream.read(data)) != -1) {
+                                receivedData.write(data, 0, bytesRead);
+                            }
                         }
                     }
                 }
@@ -109,33 +114,17 @@ public class BrotherQLDeviceTcpTest {
         serverThread.start();
     }
 
-    private void stopServer() throws IOException, InterruptedException {
+    private void stopServer() throws IOException {
         // Stop the server
         if (serverThread != null) {
+            LOGGER.log(DEBUG, "Stopping server");
             serverThread.interrupt();
-            serverThread.join();
         }
 
         if (serverSocket != null && !serverSocket.isClosed()) {
+            LOGGER.log(DEBUG, "Closing socket");
             serverSocket.close();
         }
-    }
-
-    public static String dumpHex(final String text) {
-        StringBuilder sb = new StringBuilder();
-        
-        for (int start = 0; start < text.length(); start += 32) {
-            sb.append(String.format("%08X:  ", start / 2));
-            String hex1 = text.substring(start, Math.min(text.length(), start + 16));
-            sb.append(hex1);
-            sb.append(" ");
-            if (start + 16 < text.length()) {
-                String hex2 = text.substring(start + 16, Math.min(text.length(), start + 32));
-                sb.append(hex2);
-            }
-            sb.append("\n");
-        }
-        return sb.toString();
     }
     
 }

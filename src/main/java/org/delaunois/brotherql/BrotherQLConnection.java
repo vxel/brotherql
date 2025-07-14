@@ -38,6 +38,8 @@ import static org.delaunois.brotherql.protocol.QL.CMD_SET_EXPANDED_MODE;
 import static org.delaunois.brotherql.protocol.QL.CMD_SET_MARGIN;
 import static org.delaunois.brotherql.protocol.QL.CMD_STATUS_REQUEST;
 import static org.delaunois.brotherql.protocol.QL.CMD_SWITCH_TO_RASTER;
+import static org.delaunois.brotherql.protocol.QL.CMD_TWO_COLOR_RASTER_GRAPHIC_TRANSFER_FIRST;
+import static org.delaunois.brotherql.protocol.QL.CMD_TWO_COLOR_RASTER_GRAPHIC_TRANSFER_SECOND;
 import static org.delaunois.brotherql.protocol.QL.PI_KIND;
 import static org.delaunois.brotherql.protocol.QL.PI_LENGTH;
 import static org.delaunois.brotherql.protocol.QL.PI_QUALITY;
@@ -263,18 +265,14 @@ public final class BrotherQLConnection implements Closeable {
             throw new BrotherQLException(Rx.msg("mediatype.unknown"));
         }
         
-        if (media.twoColor && device.getModel().twoColor) {
-            // Black-Red not supported (yet)
-            throw new BrotherQLException(Rx.msg("mediatype.unknown"));    
-        }
-        
+        boolean twoColor = media.twoColor && device.getModel().twoColor;
         List<BufferedImage> images = raster(job);
         checkJob(job, images, media);
         sendControlCode(images, job, media);
 
         for (int i = 0; i < images.size(); i++) {
 
-            sendPrintData(images.get(i), media);
+            sendPrintData(images.get(i), media, twoColor);
 
             boolean last = i == images.size() - 1;
             byte[] pc = last ? CMD_PRINT_LAST : CMD_PRINT;
@@ -336,7 +334,13 @@ public final class BrotherQLConnection implements Closeable {
             }
 
             if (job.isDither()) {
-                converted = Converter.floydSteinbergDithering(converted, job.getBrightness());
+                if (job.getMedia() != null && job.getMedia().twoColor) {
+                    BufferedImage redLayer = Converter.extractColorLayer(converted, pixel -> pixel == 0xFFFF0000);
+                    BufferedImage blackLayer = Converter.floydSteinbergDithering(converted, job.getBrightness());
+                    converted = Converter.override(blackLayer, redLayer);
+                } else {
+                    converted = Converter.floydSteinbergDithering(converted, job.getBrightness());
+                }
             } else {
                 converted = Converter.threshold(converted, job.getThreshold());
             }
@@ -478,38 +482,55 @@ public final class BrotherQLConnection implements Closeable {
         }
     }
 
-    private void sendPrintData(BufferedImage img, BrotherQLMedia media) throws BrotherQLException {
+    private void sendPrintData(BufferedImage img, BrotherQLMedia media, boolean twoColor) throws BrotherQLException {
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             BitOutputStream bitOutputStream = new BitOutputStream(bos);
 
             for (int y = 0; y < img.getHeight(); y++) {
                 bos.reset();
-                bos.write(CMD_RASTER_GRAPHIC_TRANSFER);
-                bos.write(media.rgtSizeBytes);
+                
+                if (twoColor) {
+                    bos.write(CMD_TWO_COLOR_RASTER_GRAPHIC_TRANSFER_FIRST);
+                    bos.write(media.rgtSizeBytes);
+                    writeColorData(bitOutputStream, media, img, y, 0x0);
+                    
+                    bos.write(CMD_TWO_COLOR_RASTER_GRAPHIC_TRANSFER_SECOND);
+                    bos.write(media.rgtSizeBytes);
+                    writeColorData(bitOutputStream, media, img, y, 0xFF0000);
 
-                // Write left margin
-                for (int i = 0; i < media.leftMarginPx; i++) {
-                    bitOutputStream.write(0);
+                } else {
+                    bos.write(CMD_RASTER_GRAPHIC_TRANSFER);
+                    bos.write(media.rgtSizeBytes);
+                    writeColorData(bitOutputStream, media, img, y, 0x0);
                 }
-
-                // Write body
-                for (int x = media.bodyWidthPx - 1; x >= 0; x--) {
-                    // Already monochrome B/W, just need to invert lsb
-                    bitOutputStream.write(~img.getRGB(x, y) & 1);
-                }
-
-                // Write right margin
-                for (int i = 0; i < media.rightMarginPx; i++) {
-                    bitOutputStream.write(0);
-                }
-
+                
                 bitOutputStream.close();
                 byte[] bitRaster = bos.toByteArray();
                 device.write(bitRaster, TIMEOUT);
             }
         } catch (IOException e) {
             throw new BrotherQLException(Rx.msg("error.senderror"), e);
+        }
+    }
+
+    private void writeColorData(BitOutputStream bitOutputStream, BrotherQLMedia media, BufferedImage img, int rasterLine, int color) throws IOException {
+        writeMargin(bitOutputStream, media.leftMarginPx);
+        writeBody(bitOutputStream, media, img, rasterLine, color);
+        writeMargin(bitOutputStream, media.rightMarginPx);
+    }
+
+    private static void writeBody(BitOutputStream bitOutputStream, BrotherQLMedia media, BufferedImage img, int rasterLine, int color) throws IOException {
+        for (int x = media.bodyWidthPx - 1; x >= 0; x--) {
+            // 0 means do not print the dot, 1 means print the dot, so negate the masked color
+            int rgb = img.getRGB(x, rasterLine) & 0xFFFFFF;
+            bitOutputStream.write((rgb == color) ? 1 : 0);
+        }
+    }
+
+    private void writeMargin(BitOutputStream bitOutputStream, int numBits) throws IOException {
+        for (int i = 0; i < numBits; i++) {
+            bitOutputStream.write(0);
         }
     }
 

@@ -44,6 +44,23 @@ public class Hex {
         return String.valueOf(toChar(bytes));
     }
 
+    public static String prettyDump(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        
+        for (int start = 0; start < bytes.length; start += 16) {
+            sb.append(String.format("%08X:  ", start));
+            for (int i = start; i < start + 8 && i < bytes.length; i++) {
+                sb.append(String.format("%02X ", bytes[i]));
+            }
+            sb.append(" ");
+            for (int i = start + 8; i < start + 16 && i < bytes.length; i++) {
+                sb.append(String.format("%02X ", bytes[i]));
+            }
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
+    
     private static char[] toChar(byte[] bytes) {
         char[] hexChars = new char[bytes.length * 2];
         for (int i = 0; i < bytes.length; i++) {

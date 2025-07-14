@@ -2,12 +2,14 @@ package org.delaunois.brotherql.util;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.util.function.Predicate;
 
 /**
  * Various image converters and utility functions.
  */
 public class Converter {
-    static class C3 {
+
+    public static class C3 {
         private int r, g, b;
 
         public C3(int r, int g, int b) {
@@ -45,6 +47,11 @@ public class Converter {
 
     }
 
+    public static final C3[] PALETTE_BLACK_WHITE = new C3[]{
+            new C3(0, 0, 0), // black
+            new C3(255, 255, 255)  // white
+    };
+    
     private static C3 findClosestPaletteColor(C3 c, C3[] palette) {
         C3 closest = palette[0];
 
@@ -82,11 +89,17 @@ public class Converter {
      * @return the dithered image
      */
     public static BufferedImage floydSteinbergDithering(BufferedImage img, float brightness) {
-        C3[] palette = new C3[]{
-                new C3(0, 0, 0), // black
-                new C3(255, 255, 255)  // white
-        };
+        return floydSteinbergDithering(img, brightness, PALETTE_BLACK_WHITE);
+    }
 
+    /**
+     * Convert the sRGB image to the given paletter using the Floyd-Steinberg dithering algorithm.
+     *
+     * @param img        the image to dither
+     * @param brightness the brightness factor to apply before dithering.
+     * @return the dithered image
+     */
+    public static BufferedImage floydSteinbergDithering(BufferedImage img, float brightness, C3[] palette) {
         int w = img.getWidth();
         int h = img.getHeight();
         BufferedImage dithered = new BufferedImage(w, h, img.getType());
@@ -95,9 +108,14 @@ public class Converter {
 
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
-                int lum = luminance(img.getRGB(x, y));
-                lum = Math.max(0, Math.min(255, (int) (lum * brightness)));
-                d[y][x] = new C3(lum, lum, lum);
+                int color = img.getRGB(x, y); // ARGB
+                int r = (color >> 16) & 0xFF;
+                int g = (color >> 8) & 0xFF;
+                int b = color & 0xFF;
+                r = Math.max(0, Math.min(255, (int) (r * brightness)));
+                g = Math.max(0, Math.min(255, (int) (g * brightness)));
+                b = Math.max(0, Math.min(255, (int) (b * brightness)));
+                d[y][x] = new C3(r, g, b);
             }
         }
 
@@ -151,11 +169,58 @@ public class Converter {
         }
         return converted;
     }
+
+    /**
+     * Creates an images by extracting the pixels meeting the given condition.
+     *
+     * @param img       the image
+     * @param condition the condition, a lambda.
+     * @return the extracted image
+     */
+    public static BufferedImage extractColorLayer(BufferedImage img, Predicate<Integer> condition) {
+        int w = img.getWidth();
+        int h = img.getHeight();
+        BufferedImage converted = new BufferedImage(w, h, img.getType());
+
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int pixel = img.getRGB(x, y);
+                if (condition.test(pixel)) {
+                    converted.setRGB(x, y, pixel);
+                } else {
+                    converted.setRGB(x, y, 0);
+                }
+            }
+        }
+        return converted;
+    }
+
+    /**
+     * Overrides the pixel of the overriden image with the pixel of the override image.
+     * 
+     * @param overriden the image to be overridden
+     * @param override the image that overrides
+     * @return the overriden image
+     */
+    public static BufferedImage override(BufferedImage overriden, BufferedImage override) {
+        int w = overriden.getWidth();
+        int h = overriden.getHeight();
+
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int pixel = override.getRGB(x, y);
+                if (pixel != 0) {
+                    overriden.setRGB(x, y, pixel);    
+                }
+            }
+        }
+        return overriden;
+    }
     
     /**
      * Rotate the given image by a multiple of 90 degrees (e.g. -270, -90, 90, 180, 270).
-     * 
-     * @param src the image to rotate
+     *
+     * @param src   the image to rotate
      * @param angle the rotation angle, in degrees
      * @return the rotated image
      */
@@ -168,11 +233,11 @@ public class Converter {
         if (angle != 90 && angle != 180 && angle != 270) {
             return src;
         }
-        
+
         double theta = Math.toRadians(angle);
         int width = src.getWidth();
         int height = src.getHeight();
-        
+
         BufferedImage dest;
         if (angle == 90 || angle == 270) {
             dest = new BufferedImage(src.getHeight(), src.getWidth(), src.getType());
@@ -198,9 +263,9 @@ public class Converter {
 
     /**
      * Scale the image to the given size.
-     * 
-     * @param img the image to scale
-     * @param width the target width
+     *
+     * @param img    the image to scale
+     * @param width  the target width
      * @param height the target height
      * @return the scaled image
      */
@@ -217,6 +282,6 @@ public class Converter {
             g.dispose();
         }
         return newImage;
-    }    
-    
+    }
+
 }
