@@ -40,6 +40,9 @@ import static org.delaunois.brotherql.protocol.QL.CMD_STATUS_REQUEST;
 import static org.delaunois.brotherql.protocol.QL.CMD_SWITCH_TO_RASTER;
 import static org.delaunois.brotherql.protocol.QL.CMD_TWO_COLOR_RASTER_GRAPHIC_TRANSFER_FIRST;
 import static org.delaunois.brotherql.protocol.QL.CMD_TWO_COLOR_RASTER_GRAPHIC_TRANSFER_SECOND;
+import static org.delaunois.brotherql.protocol.QL.EM_CUT_AT_END;
+import static org.delaunois.brotherql.protocol.QL.EM_HIGH_RESOLUTION;
+import static org.delaunois.brotherql.protocol.QL.EM_TWO_COLOR;
 import static org.delaunois.brotherql.protocol.QL.PI_KIND;
 import static org.delaunois.brotherql.protocol.QL.PI_LENGTH;
 import static org.delaunois.brotherql.protocol.QL.PI_QUALITY;
@@ -454,10 +457,18 @@ public final class BrotherQLConnection implements Closeable {
             }
 
             // Set expanded mode / high resolution printing
-            if (job.isDpi600()) {
-                bos.write(CMD_SET_EXPANDED_MODE);
-                bos.write(1 << 6);
+            bos.write(CMD_SET_EXPANDED_MODE);
+            byte flags = 0;
+            if (job.getMedia() != null && job.getMedia().twoColor) {
+                flags |= EM_TWO_COLOR;
             }
+            if (job.isAutocut()) {
+                flags |= EM_CUT_AT_END;
+            }
+            if (job.isDpi600()) {
+                flags |= EM_HIGH_RESOLUTION;
+            }
+            bos.write(flags);
 
             // Set margins (in dots)
             int feedAmount = getFeedAmount(job, media);

@@ -15,7 +15,7 @@ public class QL {
     /**
      * Reset command
      */
-    public static final byte[] CMD_RESET = new byte[400];
+    public static final byte[] CMD_RESET = new byte[200];
 
     /**
      * Initialize command
@@ -116,6 +116,22 @@ public class QL {
      * Print information command : Starting page constant
      */
     public static final byte STARTING_PAGE = 0;
+
+    /**
+     * Expanded mode bit 1 : two-color printing
+     */
+    public static final byte EM_TWO_COLOR = (byte) 0x01;
+
+    /**
+     * Expanded mode bit 4 : 1=cut at end (default), 0=not cut at end 
+     */
+    public static final byte EM_CUT_AT_END = (byte) 0x08;
+
+    /**
+     * Expanded mode bit 7 : Hight resolution printing 1=print at 600dpi in the paper length direction, 0=300dpi 
+     */
+    public static final byte EM_HIGH_RESOLUTION = (byte) 0x64;
+    
 
     private QL() {
         // Prevent instanciation
