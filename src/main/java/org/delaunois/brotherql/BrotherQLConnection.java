@@ -7,6 +7,7 @@
 package org.delaunois.brotherql;
 
 import org.delaunois.brotherql.backend.BrotherQLDevice;
+import org.delaunois.brotherql.backend.BrotherQLDeviceFile;
 import org.delaunois.brotherql.backend.BrotherQLDeviceTcp;
 import org.delaunois.brotherql.backend.BrotherQLDeviceUsb;
 import org.delaunois.brotherql.util.BitOutputStream;
@@ -95,12 +96,18 @@ public final class BrotherQLConnection implements Closeable {
 
         } else {
             URI uri = URI.create(address);
-            if ("usb".equals(uri.getScheme())) {
-                this.device = new BrotherQLDeviceUsb(uri);
-            } else if ("tcp".equals(uri.getScheme())) {
-                this.device = new BrotherQLDeviceTcp(uri);
-            } else {
-                throw new UnsupportedOperationException("Scheme " + uri.getScheme() + " not supported");
+            switch (uri.getScheme()) {
+                case "usb":
+                    this.device = new BrotherQLDeviceUsb(uri);
+                    break;
+                case "tcp":
+                    this.device = new BrotherQLDeviceTcp(uri);
+                    break;
+                case "file":
+                    this.device = new BrotherQLDeviceFile(uri);
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Scheme " + uri.getScheme() + " not supported");
             }
         }
     }
@@ -526,9 +533,9 @@ public final class BrotherQLConnection implements Closeable {
     }
 
     private void writeColorData(BitOutputStream bitOutputStream, BrotherQLMedia media, BufferedImage img, int rasterLine, int color) throws IOException {
-        writeMargin(bitOutputStream, media.leftMarginPx);
-        writeBody(bitOutputStream, media, img, rasterLine, color);
         writeMargin(bitOutputStream, media.rightMarginPx);
+        writeBody(bitOutputStream, media, img, rasterLine, color);
+        writeMargin(bitOutputStream, media.leftMarginPx);
     }
 
     private static void writeBody(BitOutputStream bitOutputStream, BrotherQLMedia media, BufferedImage img, int rasterLine, int color) throws IOException {

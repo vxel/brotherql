@@ -55,7 +55,7 @@ public class BrotherQLDeviceTcp implements BrotherQLDevice{
      * Construct the backend for a network Brother printer identified by the given URI.
      * Default port is 9100.
      *
-     * @param uri the URI identifier for the network printer : a string like tcp://host:port
+     * @param uri the URI identifier for the network printer : a string like tcp://host:port/model
      */
     public BrotherQLDeviceTcp(URI uri) {
         this.uri = uri;
