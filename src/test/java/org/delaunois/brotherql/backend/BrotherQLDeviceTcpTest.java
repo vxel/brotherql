@@ -85,7 +85,6 @@ public class BrotherQLDeviceTcpTest {
         serverSocket = new ServerSocket(DEFAULT_PORT);
         serverSocket.setSoTimeout(10000);
 
-        // Lance un thread pour accepter les connexions et lire les données reçues
         serverThread = new Thread(() -> {
             LOGGER.log(DEBUG, "Server started");
             try {

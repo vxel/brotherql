@@ -83,8 +83,25 @@ public final class BrotherQLConnection implements Closeable {
 
     /**
      * Construct a connection to the device identified by the given printer identifier.
-     * The identifier is a string like "usb://Brother/QL-700?serial=XXX" for USB printer, and
-     * "tcp://host:port/QL-720NW" for network printers.
+     * The device address is a string like :
+     * <ul>
+     *     <li>
+     *         <code>usb://Brother/QL-700?serial=XXX</code> for USB printer where <code>Brother</code>
+     *         is a fixed string (the USB Vendor Id) and <code>QL-700</code> is the name of the printer model.
+     *         See {@link BrotherQLModel} for the list of supported models.
+     *         The <code>serial</code> parameter is optional and specifies the exact USB device printer to use. 
+     *         When missing, the first Brother printer is used.
+     *     </li>
+     *     <li>
+     *         <code>tcp://host:port/QL-720NW</code> for network printers, where <code>host</code> is the IP 
+     *         or name of the printer host, <code>port</code> is the printer port, and <code>QL-720NW</code> the 
+     *         printer model. Default port is 9100.
+     *     </li>
+     *     <li>
+     *         <code>file:///absolute/path/to/file.bin?model=QL-820NWB</code> or 
+     *         <code>file:relative.bin?model=QL-700</code> for printing to file. Default model is QL-500.
+     *     </li>
+     * </ul>
      * See {@link #listDevices()} to get the identifiers of USB connected printers.
      * If address is null, the first USB printer found is used.
      *
@@ -185,7 +202,7 @@ public final class BrotherQLConnection implements Closeable {
         if (status == null) {
             return new BrotherQLStatus(null, device.getModel(), Rx.msg("error.readerror"));
         }
-        
+
         return status;
     }
 
@@ -250,13 +267,13 @@ public final class BrotherQLConnection implements Closeable {
      */
     public void sendJob(BrotherQLJob job, BiFunction<Integer, BrotherQLStatus, Boolean> statusListener)
             throws BrotherQLException {
-        
+
         if (device.isClosed()
                 || device.getModel() == null
                 || device.getModel().equals(BrotherQLModel.UNKNOWN)) {
             throw new BrotherQLException(Rx.msg("statustype.notconnected"));
         }
-        
+
         if (job == null
                 || job.getImages() == null
                 || job.getImages().isEmpty()) {
@@ -274,7 +291,7 @@ public final class BrotherQLConnection implements Closeable {
         if (media == null) {
             throw new BrotherQLException(Rx.msg("mediatype.unknown"));
         }
-        
+
         boolean twoColor = media.twoColor && device.getModel().twoColor;
         List<BufferedImage> images = raster(job);
         checkJob(job, images, media);
@@ -434,7 +451,7 @@ public final class BrotherQLConnection implements Closeable {
     private void sendControlCode(List<BufferedImage> images, BrotherQLJob job, BrotherQLMedia media) throws BrotherQLException {
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            
+
             // Add print info
             bos.write(CMD_PRINT_INFORMATION);
             byte pi = (byte) (PI_KIND | PI_WIDTH | PI_QUALITY | PI_RECOVER);
@@ -507,12 +524,12 @@ public final class BrotherQLConnection implements Closeable {
 
             for (int y = 0; y < img.getHeight(); y++) {
                 bos.reset();
-                
+
                 if (twoColor) {
                     bos.write(CMD_TWO_COLOR_RASTER_GRAPHIC_TRANSFER_FIRST);
                     bos.write(media.rgtSizeBytes);
                     writeColorData(bitOutputStream, media, img, y, 0x0);
-                    
+
                     bos.write(CMD_TWO_COLOR_RASTER_GRAPHIC_TRANSFER_SECOND);
                     bos.write(media.rgtSizeBytes);
                     writeColorData(bitOutputStream, media, img, y, 0xFF0000);
@@ -522,7 +539,7 @@ public final class BrotherQLConnection implements Closeable {
                     bos.write(media.rgtSizeBytes);
                     writeColorData(bitOutputStream, media, img, y, 0x0);
                 }
-                
+
                 bitOutputStream.close();
                 byte[] bitRaster = bos.toByteArray();
                 device.write(bitRaster, TIMEOUT);
@@ -533,17 +550,16 @@ public final class BrotherQLConnection implements Closeable {
     }
 
     private void writeColorData(BitOutputStream bitOutputStream, BrotherQLMedia media, BufferedImage img, int rasterLine, int color) throws IOException {
+        // Note : write is done right to left wrt to pixels !
         writeMargin(bitOutputStream, media.rightMarginPx);
-        writeBody(bitOutputStream, media, img, rasterLine, color);
-        writeMargin(bitOutputStream, media.leftMarginPx);
-    }
 
-    private static void writeBody(BitOutputStream bitOutputStream, BrotherQLMedia media, BufferedImage img, int rasterLine, int color) throws IOException {
         for (int x = media.bodyWidthPx - 1; x >= 0; x--) {
             // 0 means do not print the dot, 1 means print the dot, so negate the masked color
             int rgb = img.getRGB(x, rasterLine) & 0xFFFFFF;
             bitOutputStream.write((rgb == color) ? 1 : 0);
         }
+
+        writeMargin(bitOutputStream, media.leftMarginPx);
     }
 
     private void writeMargin(BitOutputStream bitOutputStream, int numBits) throws IOException {

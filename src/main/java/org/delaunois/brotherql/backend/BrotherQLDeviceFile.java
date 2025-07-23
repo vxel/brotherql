@@ -55,9 +55,10 @@ public class BrotherQLDeviceFile implements BrotherQLDevice {
 
         String path = uri.getPath();
         if (path == null || path.isEmpty()) {
-            if (uri.getAuthority() != null && !uri.getAuthority().isEmpty()) {
+            if (uri.getSchemeSpecificPart() != null && !uri.getSchemeSpecificPart().isEmpty()) {
                 // A non-regular relative path
-                this.path = Path.of(uri.getAuthority() + uri.getPath() );
+                String fileName = uri.getSchemeSpecificPart().substring(0, uri.getSchemeSpecificPart().lastIndexOf('?'));
+                this.path = Path.of(fileName);
             } else {
                 throw new IllegalArgumentException("Device path is required for printing to file");
             }
@@ -67,18 +68,27 @@ public class BrotherQLDeviceFile implements BrotherQLDevice {
         }
         
         this.model = getModelFromUri(uri);
+        LOGGER.log(Level.INFO, "Printing to file " + this.path.toAbsolutePath() + " using model " + this.model.name());
     }
 
     private BrotherQLModel getModelFromUri(URI uri) {
-        if (uri == null || uri.getQuery() == null) {
+        String query = uri.toString().substring(uri.toString().indexOf('?') + 1);
+        if (query.isEmpty()) {
+            LOGGER.log(Level.INFO, "Using default printer model " + DEFAULT_MODEL + ". Add model parameter to use a different model.");
             return DEFAULT_MODEL;
         }
 
-        String[] queryParts = uri.getQuery().split("=");
+        String[] queryParts = query.split("=");
         if (queryParts.length < 2 || !queryParts[0].equals("model")) {
+            LOGGER.log(Level.INFO, "Using default printer model " + DEFAULT_MODEL + ". Add model parameter to use a different model.");
             return DEFAULT_MODEL;
         }
-        return BrotherQLModel.fromModelName(queryParts[1].substring(1));
+        String modelName = queryParts[1];
+        BrotherQLModel found = BrotherQLModel.fromModelName(modelName);
+        if (found == null) {
+            throw new IllegalArgumentException(String.format("Unknown model %s", modelName));
+        }
+        return found;
     }
 
     @Override
