@@ -3,6 +3,7 @@ package org.delaunois.brotherql.example;
 import org.delaunois.brotherql.BrotherQLConnection;
 import org.delaunois.brotherql.BrotherQLJob;
 import org.delaunois.brotherql.BrotherQLMedia;
+import org.delaunois.brotherql.util.Converter;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -24,7 +25,10 @@ public class RasterExample {
     public static void main(String[] args) throws IOException {
         rasterWithMonochromeDithering();
         rasterWithBlackRedDithering();
+        rasterGradientWithBlackRedDithering();
+        rasterWithBlackRedThreshold();
         rasterWithThreshold();
+        extractColorLayers();
     }
 
     public static void rasterWithMonochromeDithering() throws IOException {
@@ -39,7 +43,7 @@ public class RasterExample {
                 .setImages(List.of(loadImage("/white-dove-696.png")));
         
         rastered = BrotherQLConnection.raster(job);
-        outputfile = new File("dithered.png");
+        outputfile = new File("white-dove-696-dither.png");
         ImageIO.write(rastered.get(0), "png", outputfile);
     }
     
@@ -53,10 +57,45 @@ public class RasterExample {
                 .setDither(true)
                 .setMedia(BrotherQLMedia.CT_62_720_BLACK_RED)
                 .setBrightness(1.0f)
-                .setImages(List.of(loadImage("/two-color-696.png")));
+                .setImages(List.of(loadImage("/white-dove-696rb.png")));
         
         rastered = BrotherQLConnection.raster(job);
-        outputfile = new File("dithered-2color.png");
+        outputfile = new File("white-dove-696rb-dither-rb.png");
+        ImageIO.write(rastered.get(0), "png", outputfile);
+    }
+
+    public static void rasterGradientWithBlackRedDithering() throws IOException {
+        File outputfile;
+        BrotherQLJob job;
+        List<BufferedImage> rastered;
+
+        // Use image dithering (Floyd-Steinberg)
+        job = new BrotherQLJob()
+                .setDither(true)
+                .setMedia(BrotherQLMedia.CT_62_720_BLACK_RED)
+                .setBrightness(1.0f)
+                .setImages(List.of(loadImage("/two-color-gradient-696.png")));
+        
+        rastered = BrotherQLConnection.raster(job);
+        outputfile = new File("two-color-gradient-696-dither-rb.png");
+        ImageIO.write(rastered.get(0), "png", outputfile);
+    }
+
+    public static void rasterWithBlackRedThreshold() throws IOException {
+        File outputfile;
+        BrotherQLJob job;
+        List<BufferedImage> rastered;
+
+        // Use image dithering (Floyd-Steinberg)
+        job = new BrotherQLJob()
+                .setDither(false)
+                .setThreshold(0.5f)
+                .setMedia(BrotherQLMedia.CT_62_720_BLACK_RED)
+                .setBrightness(1.0f)
+                .setImages(List.of(loadImage("/two-color-gradient-696.png")));
+        
+        rastered = BrotherQLConnection.raster(job);
+        outputfile = new File("two-color-gradient-696-threshold-rb.png");
         ImageIO.write(rastered.get(0), "png", outputfile);
     }
 
@@ -73,10 +112,22 @@ public class RasterExample {
                 .setImages(List.of(loadImage("/white-dove-696.png")));
         
         rastered = BrotherQLConnection.raster(job);
-        outputfile = new File("thresholded.png");
+        outputfile = new File("white-dove-696-threshold.png");
         ImageIO.write(rastered.get(0), "png", outputfile);
     }
     
+    public static void extractColorLayers() throws IOException {
+        BufferedImage image = loadImage("/white-dove-696rb.png");
+        BufferedImage[] layers = Converter.extractLayer(image,
+                color -> color.r == 255 && Math.abs(color.g - color.b) < 10);    
+
+        for (int i = 0; i < layers.length; i++) {
+            BufferedImage layer = layers[i];
+            File outputfile = new File("white-dove-696rb-layer-" + i + ".png");
+            ImageIO.write(layer, "png", outputfile);
+        }
+    }
+
     private static BufferedImage loadImage(String path) throws IOException {
         InputStream is = RasterExample.class.getResourceAsStream(path);
         if (is == null) {

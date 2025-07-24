@@ -9,53 +9,73 @@ import java.util.function.Predicate;
  */
 public class Converter {
 
-    public static class C3 {
-        private int r, g, b;
+    public static class ARGB {
+        public int a;
+        public int r;
+        public int g;
+        public int b;
 
-        public C3(int r, int g, int b) {
+        public ARGB(int argb) {
+            this.a = (argb >> 24) & 0xFF;
+            this.r = (argb >> 16) & 0xFF;
+            this.g = (argb >> 8) & 0xFF;
+            this.b = argb & 0xFF;
+        }
+        
+        public ARGB(int r, int g, int b) {
             this.r = r;
             this.g = g;
             this.b = b;
+            this.a = 255;
         }
-
-        public C3 add(C3 o) {
-            return new C3(r + o.r, g + o.g, b + o.b);
+        
+        public ARGB add(ARGB o) {
+            return new ARGB(r + o.r, g + o.g, b + o.b);
         }
 
         public int clamp(int c) {
             return Math.max(0, Math.min(255, c));
         }
 
-        public int diff(C3 o) {
+        public int diff(ARGB o) {
             int Rdiff = o.r - r;
             int Gdiff = o.g - g;
             int Bdiff = o.b - b;
             return Rdiff * Rdiff + Gdiff * Gdiff + Bdiff * Bdiff;
         }
 
-        public C3 mul(double d) {
-            return new C3((int) (d * r), (int) (d * g), (int) (d * b));
+        public ARGB mul(double d) {
+            return new ARGB((int) (d * r), (int) (d * g), (int) (d * b));
         }
 
-        public C3 sub(C3 o) {
-            return new C3(r - o.r, g - o.g, b - o.b);
+        public ARGB sub(ARGB o) {
+            return new ARGB(r - o.r, g - o.g, b - o.b);
         }
 
         public Color toColor() {
-            return new Color(clamp(r), clamp(g), clamp(b));
+            return new Color(clamp(r), clamp(g), clamp(b), clamp(a));
+        }
+        
+        public int toRGB() {
+            return a << 24 | (r << 16) | (g << 8) | b;
         }
 
     }
 
-    public static final C3[] PALETTE_BLACK_WHITE = new C3[]{
-            new C3(0, 0, 0), // black
-            new C3(255, 255, 255)  // white
+    public static final ARGB[] PALETTE_BLACK_WHITE = new ARGB[]{
+            new ARGB(0, 0, 0), // black
+            new ARGB(255, 255, 255)  // white
     };
-    
-    private static C3 findClosestPaletteColor(C3 c, C3[] palette) {
-        C3 closest = palette[0];
 
-        for (C3 n : palette) {
+    public static final ARGB[] PALETTE_RED_WHITE = new ARGB[]{
+            new ARGB(255, 0, 0), // red
+            new ARGB(255, 255, 255)  // white
+    };
+
+    public static ARGB findClosestPaletteColor(ARGB c, ARGB[] palette) {
+        ARGB closest = palette[0];
+
+        for (ARGB n : palette) {
             if (n.diff(c) < closest.diff(c)) {
                 closest = n;
             }
@@ -80,53 +100,28 @@ public class Converter {
         int b = color & 0xFF;
         return (int) (r * 0.299 + g * 0.587 + b * 0.114);
     }
-
+    
     /**
-     * Convert the sRGB image to monochrome black and white using the Floyd-Steinberg dithering algorithm.
+     * Convert the sRGB image to the given palette using the Floyd-Steinberg dithering algorithm.
      *
-     * @param img        the image to dither
-     * @param brightness the brightness factor to apply before dithering.
+     * @param img the image to dither
      * @return the dithered image
      */
-    public static BufferedImage floydSteinbergDithering(BufferedImage img, float brightness) {
-        return floydSteinbergDithering(img, brightness, PALETTE_BLACK_WHITE);
-    }
-
-    /**
-     * Convert the sRGB image to the given paletter using the Floyd-Steinberg dithering algorithm.
-     *
-     * @param img        the image to dither
-     * @param brightness the brightness factor to apply before dithering.
-     * @return the dithered image
-     */
-    public static BufferedImage floydSteinbergDithering(BufferedImage img, float brightness, C3[] palette) {
+    public static BufferedImage floydSteinbergDithering(BufferedImage img, ARGB[] palette) {
         int w = img.getWidth();
         int h = img.getHeight();
         BufferedImage dithered = new BufferedImage(w, h, img.getType());
 
-        C3[][] d = new C3[h][w];
-
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                int color = img.getRGB(x, y); // ARGB
-                int r = (color >> 16) & 0xFF;
-                int g = (color >> 8) & 0xFF;
-                int b = color & 0xFF;
-                r = Math.max(0, Math.min(255, (int) (r * brightness)));
-                g = Math.max(0, Math.min(255, (int) (g * brightness)));
-                b = Math.max(0, Math.min(255, (int) (b * brightness)));
-                d[y][x] = new C3(r, g, b);
-            }
-        }
+        ARGB[][] d = toARGB(img);
 
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
 
-                C3 oldColor = d[y][x];
-                C3 newColor = findClosestPaletteColor(oldColor, palette);
+                ARGB oldColor = d[y][x];
+                ARGB newColor = findClosestPaletteColor(oldColor, palette);
                 dithered.setRGB(x, y, newColor.toColor().getRGB());
 
-                C3 err = oldColor.sub(newColor);
+                ARGB err = oldColor.sub(newColor);
 
                 if (x + 1 < w) {
                     d[y][x + 1] = d[y][x + 1].add(err.mul(7. / 16));
@@ -149,6 +144,19 @@ public class Converter {
         return dithered;
     }
 
+    private static ARGB[][] toARGB(BufferedImage img) {
+        int w = img.getWidth();
+        int h = img.getHeight();
+
+        ARGB[][] d = new ARGB[h][w];
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                d[y][x] = new ARGB(img.getRGB(x, y));
+            }
+        }
+        return d;
+    }
+
     /**
      * Convert the sRGB image to monochrome black and white using a luminance threshold.
      *
@@ -157,6 +165,10 @@ public class Converter {
      * @return the converted image
      */
     public static BufferedImage threshold(BufferedImage img, float threshold) {
+        return threshold(img, threshold, Color.BLACK, Color.WHITE);
+    }
+
+    public static BufferedImage threshold(BufferedImage img, float threshold, Color low, Color high) {
         int w = img.getWidth();
         int h = img.getHeight();
         BufferedImage converted = new BufferedImage(w, h, img.getType());
@@ -164,59 +176,79 @@ public class Converter {
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 float lum = luminance(img.getRGB(x, y)) / 255.0f;
-                converted.setRGB(x, y, lum > threshold ? Color.WHITE.getRGB() : Color.BLACK.getRGB());
+                converted.setRGB(x, y, lum < threshold ? low.getRGB() : high.getRGB());
             }
         }
         return converted;
     }
 
     /**
-     * Creates an images by extracting the pixels meeting the given condition.
+     * Split image colors by extracting the pixels meeting the given condition.
+     * The method returns 2 images in an array.
+     * The first image returned contains all matching pixels, and pixels that do not match are Color.WHITE.
+     * The second image returned contains pixels that do not match, and pixels that match are Color.WHITE.
      *
      * @param img       the image
      * @param condition the condition, a lambda.
-     * @return the extracted image
+     * @return 2 images : the matching image at index 0, the remaining image at index 1
      */
-    public static BufferedImage extractColorLayer(BufferedImage img, Predicate<Integer> condition) {
+    public static BufferedImage[] extractLayer(BufferedImage img, Predicate<ARGB> condition) {
         int w = img.getWidth();
         int h = img.getHeight();
-        BufferedImage converted = new BufferedImage(w, h, img.getType());
+        BufferedImage[] layers = new BufferedImage[2];
+        BufferedImage matchingLayer = new BufferedImage(w, h, img.getType());
+        BufferedImage remainingLayer = new BufferedImage(w, h, img.getType());
+        layers[0] = matchingLayer;
+        layers[1] = remainingLayer;
+
+        ARGB[][] c3 = toARGB(img);
 
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
-                int pixel = img.getRGB(x, y);
-                if (condition.test(pixel)) {
-                    converted.setRGB(x, y, pixel);
+                ARGB color = c3[y][x];
+                if (condition.test(color)) {
+                    remainingLayer.setRGB(x, y, Color.WHITE.getRGB());
+                    matchingLayer.setRGB(x, y, color.toColor().getRGB());
                 } else {
-                    converted.setRGB(x, y, 0);
+                    remainingLayer.setRGB(x, y, color.toColor().getRGB());
+                    matchingLayer.setRGB(x, y, Color.WHITE.getRGB());
                 }
             }
         }
-        return converted;
+
+        return layers;
     }
 
     /**
-     * Overrides the pixel of the overriden image with the pixel of the override image.
-     * 
-     * @param overriden the image to be overridden
-     * @param override the image that overrides
-     * @return the overriden image
+     * Merge the pixels of the given two images into a new image.
+     * The pixels of the first image are overriden by non-white non-transparent pixels of the second image.
+     *
+     * @param first  the first image
+     * @param second the second image
+     * @return the merged new image
      */
-    public static BufferedImage override(BufferedImage overriden, BufferedImage override) {
-        int w = overriden.getWidth();
-        int h = overriden.getHeight();
+    public static BufferedImage merge(BufferedImage first, BufferedImage second) {
+        int w = first.getWidth();
+        int h = first.getHeight();
 
+        if (second.getWidth() != w || second.getHeight() != h) {
+            throw new IllegalArgumentException("Images must have the same dimensions");
+        }
+
+        BufferedImage merged = new BufferedImage(w, h, first.getType());
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
-                int pixel = override.getRGB(x, y);
-                if (pixel != 0) {
-                    overriden.setRGB(x, y, pixel);    
+                int pixel = second.getRGB(x, y);
+                if (pixel != 0 && pixel != Color.WHITE.getRGB()) {
+                    merged.setRGB(x, y, pixel);
+                } else {
+                    merged.setRGB(x, y, first.getRGB(x, y));
                 }
             }
         }
-        return overriden;
+        return merged;
     }
-    
+
     /**
      * Rotate the given image by a multiple of 90 degrees (e.g. -270, -90, 90, 180, 270).
      *
@@ -274,14 +306,65 @@ public class Converter {
                 BufferedImage.TYPE_INT_RGB);
         Graphics2D g = newImage.createGraphics();
         try {
-            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
-                    RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
             g.clearRect(0, 0, width, height);
             g.drawImage(img, 0, 0, width, height, null);
         } finally {
             g.dispose();
         }
         return newImage;
+    }
+
+    /**
+     * Remove the alpha channel of an image by blending it to a white background.
+     *
+     * @param image the image
+     * @return the new image
+     */
+    public static BufferedImage removeAlpha(BufferedImage image) {
+        int w = image.getWidth();
+        int h = image.getHeight();
+        BufferedImage newImage = new BufferedImage(w, h, image.getType());
+
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                newImage.setRGB(x, y, rgba2rgb(image.getRGB(x, y)));
+            }
+        }
+        return newImage;
+    }
+
+    public static BufferedImage brightness(BufferedImage image, float brightness) {
+        int w = image.getWidth();
+        int h = image.getHeight();
+        BufferedImage newImage = new BufferedImage(w, h, image.getType());
+
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                ARGB argb = new ARGB(image.getRGB(x, y));
+                argb.r = Math.min(255, (int) (argb.r * brightness));
+                argb.g = Math.min(255, (int) (argb.g * brightness));
+                argb.b = Math.min(255, (int) (argb.b * brightness));
+                newImage.setRGB(x, y, argb.toRGB());
+            }
+        }
+        return newImage;
+    }
+
+    /**
+     * Remove the alpha channel of a pixel by blending it to a white background.
+     *
+     * @param rgba the color
+     * @return the color without alpha
+     */
+    public static int rgba2rgb(int rgba) {
+        ARGB argb = new ARGB(rgba);
+        float alpha = argb.a / 255.0f;
+        int blend = 255 - argb.a;
+        argb.r = (int) (blend + alpha * argb.r);
+        argb.g = (int) (blend + alpha * argb.g);
+        argb.b = (int) (blend + alpha * argb.b);
+        return argb.toRGB();
     }
 
 }

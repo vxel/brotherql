@@ -14,6 +14,7 @@ import org.delaunois.brotherql.util.BitOutputStream;
 import org.delaunois.brotherql.util.Converter;
 import org.delaunois.brotherql.util.Rx;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
@@ -87,7 +88,7 @@ public final class BrotherQLConnection implements Closeable {
      * <ul>
      *     <li>
      *         <code>usb://Brother/QL-700?serial=XXX</code> for USB printer where <code>Brother</code>
-     *         is a fixed string (the USB Vendor Id) and <code>QL-700</code> is the name of the printer model.
+     *         is a fixed string (the USB Vendor identifier) and <code>QL-700</code> is the name of the printer model.
      *         See {@link BrotherQLModel} for the list of supported models.
      *         The <code>serial</code> parameter is optional and specifies the exact USB device printer to use. 
      *         When missing, the first Brother printer is used.
@@ -347,9 +348,16 @@ public final class BrotherQLConnection implements Closeable {
 
         for (BufferedImage image : images) {
             BufferedImage converted = image;
+            
+            // Blend alpha pixels to white background
+            converted = Converter.removeAlpha(converted);
 
             int bodyLengthPx = image.getHeight();
             int bodyWidthPx = image.getWidth();
+            
+            if (job.getBrightness() != 1.0f) {
+                converted = Converter.brightness(converted, job.getBrightness());
+            }
 
             if (job.isDpi600()) {
                 // High DPI : divide width by 2 (300dpi) but preserve height (600 dpi)
@@ -360,17 +368,29 @@ public final class BrotherQLConnection implements Closeable {
                 converted = Converter.rotate(converted, job.getRotate());
             }
 
-            if (job.isDither()) {
-                if (job.getMedia() != null && job.getMedia().twoColor) {
-                    BufferedImage redLayer = Converter.extractColorLayer(converted, pixel -> pixel == 0xFFFF0000);
-                    BufferedImage blackLayer = Converter.floydSteinbergDithering(converted, job.getBrightness());
-                    converted = Converter.override(blackLayer, redLayer);
+            if (job.getMedia() != null && job.getMedia().twoColor) {
+                BufferedImage[] layers = Converter.extractLayer(converted,
+                        color -> color.r == 255 && Math.abs(color.g - color.b) < 10); 
+                
+                BufferedImage redLayer = layers[0];
+                BufferedImage blackLayer = layers[1];
+                if (job.isDither()) {
+                    redLayer = Converter.floydSteinbergDithering(redLayer, Converter.PALETTE_RED_WHITE);
+                    blackLayer = Converter.floydSteinbergDithering(blackLayer, Converter.PALETTE_BLACK_WHITE);
                 } else {
-                    converted = Converter.floydSteinbergDithering(converted, job.getBrightness());
-                }
+                    redLayer = Converter.threshold(redLayer, job.getThreshold(), Color.RED, Color.WHITE);
+                    blackLayer = Converter.threshold(blackLayer, job.getThreshold(), Color.BLACK, Color.WHITE);
+                }                
+                converted = Converter.merge(blackLayer, redLayer);
+                
             } else {
-                converted = Converter.threshold(converted, job.getThreshold());
+                if (job.isDither()) {
+                    converted = Converter.floydSteinbergDithering(converted, Converter.PALETTE_BLACK_WHITE);
+                } else {
+                    converted = Converter.threshold(converted, job.getThreshold());
+                }                
             }
+
             convertedImages.add(converted);
         }
 
