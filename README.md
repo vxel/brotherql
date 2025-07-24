@@ -8,39 +8,21 @@ No printer driver is required since this package communicates directly with the 
 It allows to bypass difficulties encountered by many drivers and generic printing API
 to set the page sizes and margins, in particular for endless labels.
    
-The following printers should be supported:
-- Brother QL-500
-- Brother QL-550
-- Brother QL-560
-- Brother QL-570
-- Brother QL-580N
-- Brother QL-600
-- Brother QL-650TD
-- Brother QL-700
-- Brother QL-700M
-- Brother QL-710W
-- Brother QL-720NW
-- Brother QL-800
-- Brother QL-810W
-- Brother QL-820NWB
-- Brother QL-1050
-- Brother QL-1060N
-- Brother QL-1100
-- Brother QL-1110NWB
-- Brother QL-1115NWB
+The following printers should be supported: QL-500, QL-550, QL-560, QL-570, QL-580N, QL-600, QL-650TD, 
+QL-700, QL-700M, QL-710W, QL-720NW, QL-800, QL-810W, QL-820NWB, QL-1050, QL-1060N, QL-1100, QL-1110NWB, QL-1115NWB.
                      
 The code has been developed and tested on a Brother QL-700 printer, on Linux.
 Please report if you successfully tested the library with another printer, or if you encountered any problem.
 Support for network printers is experimental as I do not have such printer.
-Two-color printing is not support yet.
+Two-color (black & red) printing is still experimental.
 
 Options supported (see BrotherQLJob javadoc for more details):
 - **autocut**: whether to automatically cut the label (default is true)
 - **cutEach**: the number of labels after which a cut is applied (default is 1)
 - **feedAmount**: the feed amount. Note that in case of using QL-550/560/570/580N/700, 35 dots is always used, and 0 for Die-cut labels.
 - **delay**: delay in millis between prints
-- **dither**: whether to apply a Floyd-Steinberg dithering during conversion to black and white (default is true)
-- **threshold**: the threshold value (between 0 and 1) to discriminate between black and white pixels, based on pixel luminance. 
+- **dither**: whether to apply a Floyd-Steinberg dithering during conversion to black/red and white (default is true)
+- **threshold**: the threshold value (between 0 and 1) to discriminate between black/red and white pixels, based on pixel luminance. 
   Lower threshold means less printed dots, i.e. a brighter image. 
   Meaningless if dither is true
 - **brightness**: Brightness factor applied before dithering. Higher means brighter.
