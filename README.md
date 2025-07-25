@@ -30,6 +30,24 @@ Options supported (see BrotherQLJob javadoc for more details):
 - **dpi600**: use 600 dpi height x 300 dpi wide resolution. Only available on some models. The image must be provided as 600x600 dpi. The width will be resized to 300dpi.
 - **media**: the label size and type. Required only for network printer. Automatically detected for USB printers.
 
+## Note on two-color printing
+
+Red and black printing is supported by only a few models. It is activated when the printer and the media supports it. 
+Example: model QL-820NWB and media CT_62_720_BLACK_RED. 
+
+Color processing is performed this way :
+- alpha channel is first removed by blending transparent pixels to a white background. Brightness factor is applied. 
+- next, red colors are extracted in a specific "red" layer, other colors are left in the default "black" layer. 
+  Red colors are all colors belonging to the gradient from white (#FFFFFF) to pure red (#FF0000), with a small color tolerance.
+- each layer is applied a dithering or threshold processing, according to the job options. 
+  The dithering of the black layer is done with a black and white color palette,
+  while the dithering of the red layer is done with a red and white color palette.
+- finally, the red layer is merged into the black layer.
+
+This processing provides better results than a single Floyd-Steingberg dithering with a 3-color palette (black, red, and white).
+Of course, you can bypass it if you directly provide an already processed image containing only black (0x000000), 
+red (0xFF0000) and white (0xFFFFFF) pixels, and use the default (0.5) threshold.
+
 ## Maven dependency
 
 The package is available from [Maven Central](https://central.sonatype.com) and
@@ -96,6 +114,13 @@ The identifier is to be used as parameter of the `BrotherQLConnection` construct
 For network printers, use an identifier like `tcp://localhost:9100/QL-720NW`, where `localhost` is the IP address 
 or hostname of the printer, `9100` is the port (`9100` is the default port), and `QL-720NW` is the name of 
 the printer model (see `BrotherQLModel` enum class).
+
+For debugging purposes, one can print into a file using an identifier like 
+`file:///absolute/path/to/file.bin?model=QL-820NWB` or `file:relative.bin?model=QL-700`. Default model is QL-500.
+The binary file can next be sent directly to the printer using e.g. `netcat` : 
+```
+cat file.bin | nc -q 0 localhost 9100
+``` 
 
 ## Linux UDEV Configuration
 

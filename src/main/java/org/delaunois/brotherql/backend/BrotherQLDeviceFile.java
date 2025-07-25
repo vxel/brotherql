@@ -16,7 +16,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
 /**
- * A dummy implementation of BrotherQLDevice interface
+ * For printing to a file.
  *
  * @author Cedric de Launois
  */
