@@ -44,6 +44,11 @@ public class BrotherQLDeviceFile implements BrotherQLDevice {
 
     private boolean open = false;
 
+    /**
+     * Construct the backend for printing to a file identified by the given URI.
+     *
+     * @param uri the URI identifier for the file : a string like file:///absolute/path/to/file?model=QL-820NWB
+     */
     public BrotherQLDeviceFile(URI uri) {
         if (uri == null) {
             throw new IllegalArgumentException("Device URI is required");

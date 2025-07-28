@@ -9,34 +9,83 @@ import java.util.function.Predicate;
  */
 public class Converter {
 
+    /**
+     * A helper class for parsing and converting ARGB-encoded colors. 
+     */
     public static class ARGB {
+
+        /**
+         * The alpha component.
+         */
         public int a;
+
+        /**
+         * The red component.
+         */
         public int r;
+
+        /**
+         * The green component.
+         */
         public int g;
+
+        /**
+         * The blue component.
+         */
         public int b;
 
+        /**
+         * Creates a new ARGB instance by parsing the ARGB-encoded color.
+         * @param argb the ARGB-encoded color
+         */
         public ARGB(int argb) {
             this.a = (argb >> 24) & 0xFF;
             this.r = (argb >> 16) & 0xFF;
             this.g = (argb >> 8) & 0xFF;
             this.b = argb & 0xFF;
         }
-        
+
+        /**
+         * Creates a new ARGB instance using the given reg, green and blue components.
+         * Alpha is set to 255 (no transparency).
+         * 
+         * @param r the red component, between 0 and 255 (0xFF)
+         * @param g the green component, between 0 and 255 (0xFF)
+         * @param b the blue component, between 0 and 255 (0xFF)
+         */
         public ARGB(int r, int g, int b) {
             this.r = r;
             this.g = g;
             this.b = b;
             this.a = 255;
         }
-        
+
+        /**
+         * Add the given color.
+         * 
+         * @param o the color to add
+         * @return a new color, addition of this color and o.
+         */
         public ARGB add(ARGB o) {
             return new ARGB(r + o.r, g + o.g, b + o.b);
         }
 
-        public int clamp(int c) {
-            return Math.max(0, Math.min(255, c));
+        /**
+         * Subtract the given color.
+         * 
+         * @param o the color to substract
+         * @return a new color, substraction of o from this color.
+         */
+        public ARGB sub(ARGB o) {
+            return new ARGB(r - o.r, g - o.g, b - o.b);
         }
 
+        /**
+         * Computes the distance with the given color.
+         * 
+         * @param o the color
+         * @return the distance.
+         */
         public int diff(ARGB o) {
             int Rdiff = o.r - r;
             int Gdiff = o.g - g;
@@ -44,45 +93,53 @@ public class Converter {
             return Rdiff * Rdiff + Gdiff * Gdiff + Bdiff * Bdiff;
         }
 
+        /**
+         * Multiply with the given factor.
+         * 
+         * @param d the multiplication factor
+         * @return a new color, multiplication of this color by d.
+         */
         public ARGB mul(double d) {
             return new ARGB((int) (d * r), (int) (d * g), (int) (d * b));
         }
 
-        public ARGB sub(ARGB o) {
-            return new ARGB(r - o.r, g - o.g, b - o.b);
-        }
-
+        /**
+         * Convert the color to Color.
+         * @return the converted Color
+         */
         public Color toColor() {
             return new Color(clamp(r), clamp(g), clamp(b), clamp(a));
         }
-        
+
+        /**
+         * Convert the color to a ARGB-encoded integer.
+         * @return the ARGB-encoded integer
+         */
         public int toRGB() {
             return a << 24 | (r << 16) | (g << 8) | b;
         }
 
+        private int clamp(int c) {
+            return Math.max(0, Math.min(255, c));
+        }
+        
     }
 
+    /**
+     * A 2-color palette consisting of black and white colors.
+     */
     public static final ARGB[] PALETTE_BLACK_WHITE = new ARGB[]{
             new ARGB(0, 0, 0), // black
             new ARGB(255, 255, 255)  // white
     };
 
+    /**
+     * A 2-color palette consisting of red and white colors.
+     */
     public static final ARGB[] PALETTE_RED_WHITE = new ARGB[]{
             new ARGB(255, 0, 0), // red
             new ARGB(255, 255, 255)  // white
     };
-
-    public static ARGB findClosestPaletteColor(ARGB c, ARGB[] palette) {
-        ARGB closest = palette[0];
-
-        for (ARGB n : palette) {
-            if (n.diff(c) < closest.diff(c)) {
-                closest = n;
-            }
-        }
-
-        return closest;
-    }
 
     private Converter() {
         // Prevent instanciation
@@ -100,11 +157,12 @@ public class Converter {
         int b = color & 0xFF;
         return (int) (r * 0.299 + g * 0.587 + b * 0.114);
     }
-    
+
     /**
      * Convert the sRGB image to the given palette using the Floyd-Steinberg dithering algorithm.
      *
      * @param img the image to dither
+     * @param palette the palette to use
      * @return the dithered image
      */
     public static BufferedImage floydSteinbergDithering(BufferedImage img, ARGB[] palette) {
@@ -144,21 +202,9 @@ public class Converter {
         return dithered;
     }
 
-    private static ARGB[][] toARGB(BufferedImage img) {
-        int w = img.getWidth();
-        int h = img.getHeight();
-
-        ARGB[][] d = new ARGB[h][w];
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                d[y][x] = new ARGB(img.getRGB(x, y));
-            }
-        }
-        return d;
-    }
-
     /**
      * Convert the sRGB image to monochrome black and white using a luminance threshold.
+     * Identical to a call to <code>threshold(img, threshold, Color.BLACK, Color.WHITE)</code>.
      *
      * @param img       the image to convert
      * @param threshold the threshold value (between 0 and 1) to discriminate between black and white pixels.
@@ -168,6 +214,15 @@ public class Converter {
         return threshold(img, threshold, Color.BLACK, Color.WHITE);
     }
 
+    /**
+     * Convert the sRGB image to a 2-color palette using a luminance threshold.
+     *
+     * @param img       the image to convert
+     * @param threshold the threshold value (between 0 and 1) to discriminate between low and high pixels.
+     * @param low       the low color used when the luminance is below the threshold
+     * @param high      the high color used when the luminance is above the threshold
+     * @return the converted image
+     */
     public static BufferedImage threshold(BufferedImage img, float threshold, Color low, Color high) {
         int w = img.getWidth();
         int h = img.getHeight();
@@ -334,6 +389,13 @@ public class Converter {
         return newImage;
     }
 
+    /**
+     * Apply a brigthness on the given image.
+     *
+     * @param image      the image
+     * @param brightness the brightness factor, a positive float.
+     * @return the new image
+     */
     public static BufferedImage brightness(BufferedImage image, float brightness) {
         int w = image.getWidth();
         int h = image.getHeight();
@@ -367,4 +429,29 @@ public class Converter {
         return argb.toRGB();
     }
 
+    private static ARGB[][] toARGB(BufferedImage img) {
+        int w = img.getWidth();
+        int h = img.getHeight();
+
+        ARGB[][] d = new ARGB[h][w];
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                d[y][x] = new ARGB(img.getRGB(x, y));
+            }
+        }
+        return d;
+    }
+
+    private static ARGB findClosestPaletteColor(ARGB c, ARGB[] palette) {
+        ARGB closest = palette[0];
+
+        for (ARGB n : palette) {
+            if (n.diff(c) < closest.diff(c)) {
+                closest = n;
+            }
+        }
+
+        return closest;
+    }
+    
 }

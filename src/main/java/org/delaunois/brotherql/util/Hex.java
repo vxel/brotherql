@@ -44,6 +44,12 @@ public class Hex {
         return String.valueOf(toChar(bytes));
     }
 
+    /**
+     * Dumps the given byte array as a table of displayable hex numbers.
+     *
+     * @param bytes the byte array
+     * @return the string
+     */
     public static String prettyDump(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
         
