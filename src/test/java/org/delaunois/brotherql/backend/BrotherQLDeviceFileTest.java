@@ -46,5 +46,28 @@ public class BrotherQLDeviceFileTest {
                 Hex.prettyDump(Files.readAllBytes(Path.of(bin.getAbsolutePath()))));
     }
 
+    @Test
+    public void testImageRedBlackDithering() throws Exception {
+        InputStream is = PrintExample.class.getResourceAsStream("/test-image.png");
+        BufferedImage img = ImageIO.read(Objects.requireNonNull(is));
+        
+        BrotherQLJob job = new BrotherQLJob()
+                .setDither(true)
+                .setAutocut(true)
+                .setMedia(BrotherQLMedia.CT_62_720_BLACK_RED)
+                .setBrightness(1.0f)
+                .setImages(List.of(img));
+        
+        BrotherQLConnection connection = new BrotherQLConnection("file:test-image.bin?model=QL-820NWB");
+        connection.open();
+        connection.sendJob(job);
+        connection.close();
+        
+        File bin = new File("test-image.bin");
+        assertTrue(bin.exists());
+
+        LOGGER.log(System.Logger.Level.DEBUG, "File dump\n" + 
+                Hex.prettyDump(Files.readAllBytes(Path.of(bin.getAbsolutePath()))));
+    }
     
 }

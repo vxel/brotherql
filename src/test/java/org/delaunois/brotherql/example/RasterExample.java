@@ -25,6 +25,7 @@ public class RasterExample {
     public static void main(String[] args) throws IOException {
         rasterWithMonochromeDithering();
         rasterWithBlackRedDithering();
+        rasterTestImageRedBlackDithering();
         rasterGradientWithBlackRedDithering();
         rasterWithBlackRedThreshold();
         rasterWithThreshold();
@@ -78,6 +79,23 @@ public class RasterExample {
         
         rastered = BrotherQLConnection.raster(job);
         outputfile = new File("two-color-gradient-696-dither-rb.png");
+        ImageIO.write(rastered.get(0), "png", outputfile);
+    }
+
+    public static void rasterTestImageRedBlackDithering() throws IOException {
+        File outputfile;
+        BrotherQLJob job;
+        List<BufferedImage> rastered;
+
+        // Use image dithering (Floyd-Steinberg)
+        job = new BrotherQLJob()
+                .setDither(true)
+                .setMedia(BrotherQLMedia.CT_62_720_BLACK_RED)
+                .setBrightness(1.0f)
+                .setImages(List.of(loadImage("/test-image.png")));
+        
+        rastered = BrotherQLConnection.raster(job);
+        outputfile = new File("test-image-dither-rb.png");
         ImageIO.write(rastered.get(0), "png", outputfile);
     }
 
