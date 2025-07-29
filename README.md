@@ -56,7 +56,7 @@ can be used with the following dependency :
 <dependency>
     <groupId>org.delaunois</groupId>
     <artifactId>brotherql</artifactId>
-    <version>1.3.0</version>
+    <version>1.4.0</version>
 </dependency>
 ```
 
