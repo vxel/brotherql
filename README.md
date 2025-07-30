@@ -48,6 +48,16 @@ This processing provides better results than a single Floyd-Steingberg dithering
 Of course, you can bypass it if you directly provide an already processed image containing only black (0x000000), 
 red (0xFF0000) and white (0xFFFFFF) pixels, and use the default (0.5) threshold.
 
+Here is an example of dithering to red-black color.
+
+Original image (with transparent background) : 
+
+  <img alt="Original image" width="696" height="373" src="src/test/resources/test-image.png"/>
+
+Image dithered ready for 2-color printing :
+
+  <img alt="Rastered image" width="696" height="373" src="src/test/resources/test-image-dither-rb.png"/>
+
 ## Maven dependency
 
 The package is available from [Maven Central](https://central.sonatype.com) and
@@ -79,7 +89,7 @@ Here is a quick example of how to print a label using the library:
     job.setMedia(BrotherQLMedia.CT_62_720);
     
     // Print the job, using the first detected USB Brother printer
-    // For a network printer, use: new BrotherQLConnection("tcp://host:post/model")
+    // For a network printer, use: new BrotherQLConnection("tcp://host:port/model")
     BrotherQLConnection connection = new BrotherQLConnection();
     try (connection) {
         // Open the connection with the printer
