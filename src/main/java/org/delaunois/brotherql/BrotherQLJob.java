@@ -37,6 +37,11 @@ public class BrotherQLJob {
     private boolean autocut = true;
 
     /**
+     * Whether half cut is enabled or not.
+     */
+    private boolean halfcut = false;
+
+    /**
      * The number of labels after which a cut is applied.
      */
     private int cutEach = 1;

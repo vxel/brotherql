@@ -114,6 +114,26 @@ public enum BrotherQLModel {
     QL_1115NWB("QL-1115NWB", 0x20ab, 0x45, false, 150, 35433, false, false, false),
 
     /**
+     * Brother PT-P900
+     */
+    PT_P900("PT-P900", 0x2083, 0x71, false, 57, 28346, false, true, false),
+
+    /**
+     * Brother PT-P900W
+     */
+    PT_P900W("PT-P900W", 0x2085, 0x69, false, 57, 28346, false, true, false),
+
+    /**
+     * Brother PT-P950NW
+     */
+    PT_P950NW("PT-P950NW", 0x2086, 0x70, false, 57, 28346, false, true, false),
+
+    /**
+     * Brother PT-P910BT
+     */
+    PT_P910BT("PT-P910BT", 0x20c7, 0x78, false, 57, 14173, true, false, false),
+
+    /**
      * Unknown printer
      */
     UNKNOWN(Rx.msg("model.unknown"), 0, 0, false, 0, 0, true, false, false);

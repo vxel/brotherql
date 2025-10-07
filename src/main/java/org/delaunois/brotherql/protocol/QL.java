@@ -123,12 +123,17 @@ public class QL {
     public static final byte EM_TWO_COLOR = (byte) 0x01;
 
     /**
+     * Expanded mode bit 3 : half cut, 1=half cut on, 0=half cut off
+     */
+    public static final byte EM_HALF_CUT = (byte) 0x04;
+    
+    /**
      * Expanded mode bit 4 : 1=cut at end (default), 0=not cut at end 
      */
     public static final byte EM_CUT_AT_END = (byte) 0x08;
 
     /**
-     * Expanded mode bit 7 : Hight resolution printing 1=print at 600dpi in the paper length direction, 0=300dpi 
+     * Expanded mode bit 7 : High resolution printing 1=print at 600dpi in the paper length direction, 0=300dpi 
      */
     public static final byte EM_HIGH_RESOLUTION = (byte) 0x64;
     

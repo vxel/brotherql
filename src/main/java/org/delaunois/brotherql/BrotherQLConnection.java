@@ -43,6 +43,7 @@ import static org.delaunois.brotherql.protocol.QL.CMD_SWITCH_TO_RASTER;
 import static org.delaunois.brotherql.protocol.QL.CMD_TWO_COLOR_RASTER_GRAPHIC_TRANSFER_FIRST;
 import static org.delaunois.brotherql.protocol.QL.CMD_TWO_COLOR_RASTER_GRAPHIC_TRANSFER_SECOND;
 import static org.delaunois.brotherql.protocol.QL.EM_CUT_AT_END;
+import static org.delaunois.brotherql.protocol.QL.EM_HALF_CUT;
 import static org.delaunois.brotherql.protocol.QL.EM_HIGH_RESOLUTION;
 import static org.delaunois.brotherql.protocol.QL.EM_TWO_COLOR;
 import static org.delaunois.brotherql.protocol.QL.PI_KIND;
@@ -511,6 +512,9 @@ public final class BrotherQLConnection implements Closeable {
             }
             if (job.isDpi600()) {
                 flags |= EM_HIGH_RESOLUTION;
+            }
+            if (job.isHalfcut()) {
+                flags |= EM_HALF_CUT;
             }
             bos.write(flags);
 
