@@ -463,7 +463,7 @@ public final class BrotherQLConnection implements Closeable {
         }
 
         for (BufferedImage image : images) {
-            if (image.getHeight() != bodyLengthPx || image.getWidth() != bodyWidthPx) {
+            if (image.getWidth() != bodyWidthPx) {
                 throw new BrotherQLException(String.format(Rx.msg("error.img.vary")));
             }
         }
