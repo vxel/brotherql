@@ -463,7 +463,9 @@ public final class BrotherQLConnection implements Closeable {
         }
 
         for (BufferedImage image : images) {
-            if (image.getHeight() != bodyLengthPx || image.getWidth() != bodyWidthPx) {
+            boolean isContinuous = BrotherQLMediaType.CONTINUOUS_LENGTH_TAPE.equals(media.mediaType);
+            if ((!isContinuous && (image.getHeight() != bodyLengthPx || image.getWidth() != bodyWidthPx)) ||
+                    (isContinuous && (image.getWidth() != bodyWidthPx))) {
                 throw new BrotherQLException(String.format(Rx.msg("error.img.vary")));
             }
         }
