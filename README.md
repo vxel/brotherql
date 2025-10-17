@@ -10,14 +10,14 @@ to set the page sizes and margins, in particular for endless labels.
    
 The following printers should be supported: QL-500, QL-550, QL-560, QL-570, QL-580N, QL-600, QL-650TD, 
 QL-700, QL-700M, QL-710W, QL-720NW, QL-800, QL-810W, QL-820NWB, QL-1050, QL-1060N, QL-1100, QL-1110NWB, QL-1115NWB.
+Experimental support is provided for PT-P900, PT-P900W, PT-P950NW and PT-P910BT.
                      
-The code has been developed and tested on a Brother QL-700 printer, on Linux.
+The code has been developed and tested on Brother QL-700, QL-820NWB and QL-720NW.
 Please report if you successfully tested the library with another printer, or if you encountered any problem.
-Support for network printers is experimental as I do not have such printer.
-Two-color (black & red) printing is still experimental.
 
 Options supported (see BrotherQLJob javadoc for more details):
 - **autocut**: whether to automatically cut the label (default is true)
+- **halfcut**: whether to cut the label's backing without cutting the tape (support only for PT models, default is false)
 - **cutEach**: the number of labels after which a cut is applied (default is 1)
 - **feedAmount**: the feed amount. Note that in case of using QL-550/560/570/580N/700, 35 dots is always used, and 0 for Die-cut labels.
 - **delay**: delay in millis between prints
@@ -66,7 +66,7 @@ can be used with the following dependency :
 <dependency>
     <groupId>org.delaunois</groupId>
     <artifactId>brotherql</artifactId>
-    <version>1.4.0</version>
+    <version>1.5.0</version>
 </dependency>
 ```
 
